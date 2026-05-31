@@ -1,0 +1,19 @@
+# 依存パッケージ（npm install で再生成可能）
+node_modules/
+
+# SSL証明書（秘密鍵を含むためコミット禁止）
+cert/
+
+# データファイル（個人の学習記録）
+data/
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# macOS
+.DS_Store
+
+# エディタ
+.vscode/
+*.swp

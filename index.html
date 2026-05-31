@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Output Force | アウトプット強制システム</title>
+<style>
+:root {
+  --bg: #0d0d14;
+  --surface: #161622;
+  --card: #1e1e2e;
+  --input-bg: #252535;
+  --accent: #7c6aff;
+  --accent2: #ff6b9d;
+  --success: #4cc9a0;
+  --warn: #ffd166;
+  --danger: #ff6b6b;
+  --text: #e2e2f0;
+  --text2: #8585a8;
+  --muted: #55556a;
+  --border: #2a2a3e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Kaku Gothic ProN', sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6;
+}
+
+/* ── HEADER ── */
+.header {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 24px; position: sticky; top: 0; z-index: 100;
+}
+.header-inner {
+  max-width: 760px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 58px; gap: 12px;
+}
+.logo {
+  font-size: 17px; font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  white-space: nowrap;
+}
+.header-right { display: flex; align-items: center; gap: 10px; }
+.sync-chip {
+  font-size: 11px; padding: 3px 9px; border-radius: 100px;
+  background: rgba(76,201,160,.15); color: var(--success);
+  display: none; white-space: nowrap;
+}
+.sync-chip.visible { display: block; }
+.sync-chip.local   { background: rgba(255,209,102,.1); color: var(--warn); }
+.sync-chip.err     { background: rgba(255,107,107,.1); color: var(--danger); }
+.debt-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 14px; border-radius: 100px; font-size: 13px; font-weight: 700;
+  background: var(--danger); color: #fff;
+  animation: pulse-badge 2s infinite; cursor: pointer; white-space: nowrap;
+}
+.debt-badge.zero { background: var(--success); animation: none; }
+@keyframes pulse-badge {
+  0%,100%{ opacity:1; transform:scale(1); }
+  50%{ opacity:.8; transform:scale(.97); }
+}
+
+/* ── TABS ── */
+.nav { background: var(--surface); border-bottom: 1px solid var(--border); }
+.nav-inner { max-width: 760px; margin: 0 auto; display: flex; }
+.nav-tab {
+  padding: 13px 16px; cursor: pointer; color: var(--text2);
+  font-size: 13px; font-weight: 600; border-bottom: 2px solid transparent;
+  transition: all .2s; position: relative; white-space: nowrap;
+}
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.nav-tab:hover:not(.active) { color: var(--text); }
+.nav-dot {
+  position: absolute; top: 10px; right: 6px;
+  width: 7px; height: 7px; border-radius: 50%; background: var(--danger);
+}
+
+/* ── MAIN ── */
+.main { max-width: 760px; margin: 0 auto; padding: 24px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 20px; margin-bottom: 14px;
+}
+
+/* ── FORM ── */
+input[type=text], input[type=time], textarea, select {
+  background: var(--input-bg); border: 1px solid var(--border); border-radius: 9px;
+  color: var(--text); font-size: 14px; font-family: inherit;
+  padding: 10px 14px; width: 100%; transition: border-color .2s; outline: none;
+}
+input[type=text]:focus, input[type=time]:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+}
+textarea { resize: vertical; min-height: 90px; }
+select { cursor: pointer; }
+label {
+  font-size: 12px; font-weight: 700; color: var(--text2); display: block;
+  margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em;
+}
+.form-group { margin-bottom: 14px; }
+
+/* ── BUTTONS ── */
+.btn {
+  padding: 10px 20px; border-radius: 9px; border: none; cursor: pointer;
+  font-size: 14px; font-weight: 700; font-family: inherit; transition: all .18s; white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #6b5aee; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: transparent; color: var(--danger); border: 1px solid rgba(255,107,107,.4); }
+.btn-danger:hover { background: rgba(255,107,107,.1); }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+
+/* ── TIMER ── */
+.timer-wrap { text-align: right; }
+.timer { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--warn); line-height: 1; }
+.timer.urgent { color: var(--danger); animation: pulse-badge .6s infinite; }
+.timer.done   { color: var(--muted); font-size: 14px; }
+.timer-label  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* ── PROGRESS ── */
+.progress-bar { background: var(--border); border-radius: 100px; height: 5px; overflow: hidden; margin: 10px 0 0; }
+.progress-fill {
+  height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 100px; transition: width .4s ease;
+}
+
+/* ── OUTPUT TASK ── */
+.task-block { border-left: 3px solid var(--accent); padding-left: 16px; margin-top: 16px; }
+.task-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 12px; }
+.task-title { font-size: 15px; font-weight: 700; }
+.task-step  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.task-prompt {
+  background: rgba(124,106,255,.1); border-radius: 8px; padding: 10px 14px;
+  font-size: 13px; color: var(--text2); margin-bottom: 10px; line-height: 1.5;
+}
+.char-counter { font-size: 12px; color: var(--muted); margin-top: 5px; }
+.char-counter.met { color: var(--success); }
+
+/* ── TAGS ── */
+.tag {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  padding: 2px 9px; border-radius: 100px;
+  background: rgba(124,106,255,.2); color: var(--accent);
+}
+.tag.warn    { background: rgba(255,209,102,.2); color: var(--warn); }
+.tag.success { background: rgba(76,201,160,.2);  color: var(--success); }
+.tag.danger  { background: rgba(255,107,107,.2); color: var(--danger); }
+
+/* ── ALERTS ── */
+.alert { border-radius: 9px; padding: 12px 16px; font-size: 13px; margin-bottom: 14px; }
+.alert-danger  { background: rgba(255,107,107,.08); border: 1px dashed rgba(255,107,107,.4); color: var(--danger); }
+.alert-success { background: rgba(76,201,160,.1);  border: 1px solid rgba(76,201,160,.3);   color: var(--success); }
+.alert-info    { background: rgba(124,106,255,.08); border: 1px solid rgba(124,106,255,.3);  color: var(--text2); }
+
+/* ── STATS ── */
+.stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
+.stat-value {
+  font-size: 26px; font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.stat-label { font-size: 11px; color: var(--text2); margin-top: 3px; }
+
+/* ── HISTORY ── */
+.history-output { background: var(--input-bg); border-radius: 7px; padding: 10px 12px; margin-top: 8px; font-size: 13px; color: var(--text2); line-height: 1.5; }
+.history-output-label { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+
+/* ── SETTINGS ── */
+.settings-section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+.settings-section-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.info-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: var(--input-bg); border-radius: 9px; margin-bottom: 8px; font-size: 13px;
+}
+.info-row .lbl { color: var(--text2); flex-shrink: 0; margin-right: 12px; }
+.info-row .val { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.info-row .val.ok   { color: var(--success); }
+.info-row .val.ng   { color: var(--danger); }
+.info-row .val.warn { color: var(--warn); }
+
+.url-box {
+  background: var(--input-bg); border: 1px solid var(--border); border-radius: 9px;
+  padding: 12px 14px; font-family: monospace; font-size: 15px; color: var(--accent);
+  letter-spacing: .02em; word-break: break-all; margin-bottom: 8px;
+}
+
+.notif-time-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.notif-time-row label { font-size: 13px; color: var(--text2); margin: 0; text-transform: none; letter-spacing: 0; white-space: nowrap; width: 60px; flex-shrink: 0; }
+.notif-time-row input[type=time] { flex: 1; max-width: 160px; color-scheme: dark; }
+
+/* ── TOAST ── */
+#toastContainer { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast {
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 18px; font-size: 13px; font-weight: 600; color: var(--text);
+  box-shadow: 0 8px 32px rgba(0,0,0,.4); animation: toast-in .3s ease;
+  pointer-events: auto; max-width: 300px;
+}
+.toast.success { border-left: 3px solid var(--success); }
+.toast.error   { border-left: 3px solid var(--danger); }
+.toast.info    { border-left: 3px solid var(--accent); }
+@keyframes toast-in { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── MISC ── */
+.celebration { text-align: center; padding: 48px 24px; }
+.celebration-icon { font-size: 60px; margin-bottom: 12px; }
+.empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+.empty-icon { font-size: 44px; margin-bottom: 12px; }
+.sh { font-size: 16px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+.flex { display: flex; } .fc { align-items: center; } .jb { justify-content: space-between; } .je { justify-content: flex-end; }
+.g8 { gap: 8px; } .g12 { gap: 12px; }
+.mt8 { margin-top: 8px; } .mt16 { margin-top: 16px; }
+.hidden { display: none !important; }
+.text-sm { font-size: 13px; } .text-muted { color: var(--muted); } .bold { font-weight: 700; }
+.flex-wrap { flex-wrap: wrap; }
+
+.blocker-banner { background: rgba(255,107,107,.07); border: 1px dashed rgba(255,107,107,.45); border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 14px; }
+.blocker-banner strong { color: var(--danger); }
+.li-title { font-size: 14px; font-weight: 600; }
+.li-meta  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+@media(max-width:600px){
+  .main { padding: 14px; } .stats-grid { grid-template-columns: repeat(2,1fr); }
+  .timer { font-size: 22px; } #toastContainer { bottom:14px; right:14px; left:14px; } .toast { max-width:none; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">⚡ Output Force</div>
+    <div class="header-right">
+      <div id="syncChip" class="sync-chip"></div>
+      <div id="debtBadge" class="debt-badge zero" onclick="switchTab('output')">
+        <span id="debtIcon">✓</span>
+        <span id="debtText">0件 完了待ち</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-tab active" id="tab-input"    onclick="switchTab('input')">📥 インプット</div>
+    <div class="nav-tab"        id="tab-output"   onclick="switchTab('output')">
+      ⚡ アウトプット<span id="outputDot" class="nav-dot hidden"></span>
+    </div>
+    <div class="nav-tab"        id="tab-history"  onclick="switchTab('history')">📊 記録</div>
+    <div class="nav-tab"        id="tab-settings" onclick="switchTab('settings')">⚙️ 設定</div>
+  </div>
+</nav>
+
+<main class="main">
+
+  <!-- INPUT TAB -->
+  <div id="view-input">
+    <div id="blockerBanner" class="blocker-banner hidden">
+      🚫 <strong>新規インプット停止中</strong> — アウトプットが <strong id="blockerCount">0</strong>件 溜まっています。
+      <div class="mt8"><button class="btn btn-primary btn-sm" onclick="switchTab('output')">アウトプットへ →</button></div>
+    </div>
+    <div id="inputForm" class="card">
+      <div class="sh">今日学んだことを追加</div>
+      <div class="form-group">
+        <label>タイトル</label>
+        <input type="text" id="iTitle" placeholder="例: Pythonのデコレータの仕組み" maxlength="100"
+          onkeydown="if(event.key==='Enter')addLearning()">
+      </div>
+      <div class="form-group">
+        <label>カテゴリ</label>
+        <select id="iCat">
+          <option value="tech">💻 技術</option>
+          <option value="biz">💼 ビジネス</option>
+          <option value="sci">🔬 サイエンス</option>
+          <option value="lang">🌐 語学</option>
+          <option value="other">📚 その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>メモ（任意）</label>
+        <textarea id="iNotes" placeholder="URL、参考資料、キーワードなど..." rows="3" style="min-height:70px"></textarea>
+      </div>
+      <div class="flex je"><button class="btn btn-primary" onclick="addLearning()">追加する →</button></div>
+    </div>
+    <div id="todayList"></div>
+  </div>
+
+  <!-- OUTPUT TAB -->
+  <div id="view-output" class="hidden">
+    <div id="outputContent"></div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="view-history" class="hidden">
+    <div id="historyContent"></div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div id="view-settings" class="hidden">
+
+    <!-- Multi-device / Server -->
+    <div class="settings-section">
+      <div class="settings-section-title">🖥️ マルチデバイス同期</div>
+
+      <div class="info-row">
+        <span class="lbl">状態</span>
+        <span class="val" id="srvStatus">確認中...</span>
+      </div>
+      <div class="info-row" id="srvModeRow">
+        <span class="lbl">モード</span>
+        <span class="val warn" id="srvMode">ローカルのみ</span>
+      </div>
+
+      <div id="srvUrlSection" class="hidden">
+        <div class="divider"></div>
+        <div class="text-sm text-muted" style="margin-bottom:8px">他のデバイスはこのURLをブラウザで開いてください</div>
+        <div class="url-box" id="srvNetUrl">—</div>
+        <div class="flex g8 flex-wrap">
+          <button class="btn btn-primary" onclick="copyServerUrl()">URLをコピー (HTTPS)</button>
+          <button class="btn btn-ghost btn-sm" id="srvLocalBtn" onclick="copyLocalUrl()">ローカルURLをコピー</button>
+        </div>
+        <div class="alert alert-info" style="margin-top:10px;margin-bottom:0;font-size:12px">
+          🔒 他デバイスで初回アクセス時に「接続が安全でない」警告が出ます。<br>
+          <strong>「詳細設定」→「〜にアクセスする」</strong>をクリックして進んでください。<br>
+          通知許可にはHTTPS接続が必要なため、このURLをご利用ください。
+        </div>
+        <div class="divider"></div>
+        <div class="info-row">
+          <span class="lbl">データ保存先</span>
+          <span class="val" style="font-family:monospace;font-size:12px;color:var(--accent)">./data/*.md</span>
+        </div>
+        <div class="info-row">
+          <span class="lbl">最終同期</span>
+          <span class="val" id="srvLastSync">—</span>
+        </div>
+      </div>
+
+      <div id="srvOfflineSection">
+        <div id="srvOfflineLocal" class="alert alert-info" style="margin-top:12px;margin-bottom:0;font-size:12px">
+          💡 <strong>サーバーが起動していません。</strong><br>
+          <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px">アプリ起動.bat</code>
+          をダブルクリックしてください。<br>
+          Node.js が必要です: <strong>nodejs.org</strong>
+        </div>
+        <div id="srvOfflineRemote" class="alert alert-danger" style="margin-top:12px;margin-bottom:0;font-size:12px;display:none">
+          🖥️ <strong>ホストPC でサーバーが起動していません。</strong><br>
+          ホストPC（このアプリのデータがある PC）で
+          <strong>アプリ起動.bat</strong> を実行してから、このページを再読み込みしてください。
+        </div>
+      </div>
+
+      <div id="srvMigrateSection" class="hidden" style="margin-top:12px">
+        <button class="btn btn-ghost" onclick="migrateToServer()">
+          ローカルデータをサーバーに移行する
+        </button>
+        <span class="text-sm text-muted" style="margin-left:8px">（既存データをサーバーにアップロード）</span>
+      </div>
+    </div>
+
+    <!-- OneDrive -->
+    <div class="settings-section">
+      <div class="settings-section-title">☁️ OneDrive 同期</div>
+      <div class="info-row">
+        <span class="lbl">状態</span>
+        <span class="val ng" id="odStatus">未接続</span>
+      </div>
+      <div class="info-row">
+        <span class="lbl">保存ファイル</span>
+        <span class="val" id="odFileName" style="font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span>
+      </div>
+      <div class="info-row">
+        <span class="lbl">最終同期</span>
+        <span class="val" id="odLastSync">—</span>
+      </div>
+      <div class="flex g8 mt8 flex-wrap">
+        <button class="btn btn-primary" onclick="connectOneDrive()">OneDriveに接続</button>
+        <button class="btn btn-ghost" onclick="syncNow()" id="odSyncBtn" disabled>今すぐ同期</button>
+        <button class="btn btn-ghost" onclick="loadFromOneDrive()" id="odLoadBtn">クラウドから読み込む</button>
+        <button class="btn btn-danger btn-sm" id="odDisconnectBtn" onclick="disconnectOneDrive()" style="display:none">切断</button>
+      </div>
+      <div class="alert alert-info" style="margin-top:14px;margin-bottom:0;font-size:12px">
+        💡 「接続」後、OneDriveフォルダ（例:
+        <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px">C:\Users\[名前]\OneDrive</code>）
+        に保存してください。変更のたびに自動同期されます。Chrome/Edgeが必要です。
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="settings-section">
+      <div class="settings-section-title">🔔 通知設定</div>
+      <div class="info-row">
+        <span class="lbl">通知許可</span>
+        <span class="val" id="notifPermStatus">確認中...</span>
+      </div>
+      <div id="notifPermBtn" style="display:none;margin-bottom:12px">
+        <button class="btn btn-primary" onclick="requestNotifPermission()">通知を許可する</button>
+      </div>
+      <div id="notifDeniedMsg" style="display:none;margin-bottom:12px">
+        <div class="alert alert-danger" style="margin-bottom:8px">
+          🚫 通知が<strong>拒否済み</strong>です。ブラウザの設定から手動で許可してください。<br>
+          <span style="font-size:11px;opacity:.8">アドレスバー左の 🔒 アイコン → 通知 → 許可</span>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="sh" style="font-size:14px;margin-bottom:12px">通知時刻（最大3件）</div>
+      <div class="notif-time-row">
+        <label>時刻 1</label>
+        <input type="time" id="notif1">
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('notif1').value=''">✕</button>
+      </div>
+      <div class="notif-time-row">
+        <label>時刻 2</label>
+        <input type="time" id="notif2">
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('notif2').value=''">✕</button>
+      </div>
+      <div class="notif-time-row">
+        <label>時刻 3</label>
+        <input type="time" id="notif3">
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('notif3').value=''">✕</button>
+      </div>
+      <div class="flex jb fc mt16">
+        <button class="btn btn-ghost btn-sm" onclick="testNotification()">テスト通知</button>
+        <button class="btn btn-primary" onclick="saveNotifSettings()">保存する</button>
+      </div>
+      <div class="alert alert-info" style="margin-top:14px;margin-bottom:0;font-size:12px">
+        💡 通知はブラウザが開いている間のみ機能します。確実に受け取るにはタブをピン留めしてください。
+      </div>
+    </div>
+
+    <!-- Data management -->
+    <div class="settings-section">
+      <div class="settings-section-title">🗄️ データ管理</div>
+      <div class="flex g8 flex-wrap">
+        <button class="btn btn-ghost" onclick="exportJSON()">JSONエクスポート</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">JSONインポート</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+        <button class="btn btn-danger" onclick="clearAllData()">全データ消去</button>
+      </div>
+    </div>
+
+  </div><!-- /view-settings -->
+
+</main>
+
+<div id="toastContainer"></div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════
+const STORAGE_KEY  = 'output_force_v2';
+const SETTINGS_KEY = 'output_force_settings';
+const DB_NAME      = 'output_force_idb';
+const DB_STORE     = 'handles';
+const BLOCK_AT     = 3;
+
+const CAT_ICON = { tech:'💻', biz:'💼', sci:'🔬', lang:'🌐', other:'📚' };
+
+const TASKS = [
+  {
+    key:'recall',  title:'🧠 フリーリコール',
+    subtitle:'何も見ずに、覚えていることを全部書き出す',
+    prompt: t => `「${t}」について、今すぐ思い出せることをすべて書いてください。メモ・資料は見ないで。`,
+    minChars:80, timerSec:180, ph:'キーワード、概念、気づいたこと…何でも書いて'
+  },
+  {
+    key:'summary', title:'📝 3文要約',
+    subtitle:'学んだ内容の核心を3文以内で凝縮する',
+    prompt: t => `「${t}」を3文以内で要約してください。一番大事なことを伝える意識で。`,
+    minChars:50, timerSec:120, ph:'1文目: …\n2文目: …\n3文目: …'
+  },
+  {
+    key:'apply',   title:'🔧 実用例',
+    subtitle:'実際にどう使う？具体的な場面を書く',
+    prompt: t => `「${t}」を実際の仕事・生活でどう活かせますか？具体的な場面を書いてください。`,
+    minChars:50, timerSec:120, ph:'例えば、〇〇の場面で…'
+  },
+  {
+    key:'teach',   title:'🗣️ 初心者に説明',
+    subtitle:'全く知らない人に伝わるよう噛み砕く（ファインマン式）',
+    prompt: t => `「${t}」を全く知らない人に説明してください。専門用語なし、比喩OK。`,
+    minChars:70, timerSec:180, ph:'簡単に言うと…'
+  }
+];
+
+// ══════════════════════════════════════════
+// DATA LAYER (localStorage + server sync)
+// ══════════════════════════════════════════
+let _serverOnline = false;
+let _serverInfo   = null; // { ip, port }
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"items":[]}'); }
+  catch { return { items: [] }; }
+}
+
+function save(d) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+  if (_serverOnline) {
+    bgSyncToServer(d).catch(() => {
+      _serverOnline = false;
+      setSyncChip('local', 'ローカルモード');
+    });
+  }
+  if (_fileHandle) syncToOneDrive();
+}
+
+function pendingCount(d) { return d.items.filter(x => x.status !== 'done').length; }
+
+// ══════════════════════════════════════════
+// SERVER SYNC
+// ══════════════════════════════════════════
+async function initServer() {
+  try {
+    const res = await fetch('/api/info', { signal: AbortSignal.timeout(2000) });
+    if (!res.ok) throw new Error('no server');
+    _serverInfo = await res.json();
+    _serverOnline = true;
+
+    // Pull data from server (server is source of truth when online)
+    const dataRes = await fetch('/api/entries');
+    const { items: serverItems } = await dataRes.json();
+    const local = load();
+
+    if (serverItems.length > 0) {
+      // Use server data
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ items: serverItems }));
+    } else if (local.items.length > 0) {
+      // Upload local data to server
+      await bgSyncToServer(local);
+    }
+
+    setSyncChip('visible', '🖥️ サーバー同期中');
+    updateGlobal();
+    renderInput();
+
+    // Show migrate button if local has more data
+    const migBtn = document.getElementById('srvMigrateSection');
+    if (migBtn && local.items.length > serverItems.length) migBtn.classList.remove('hidden');
+
+  } catch {
+    _serverOnline = false;
+    setSyncChip('local', '📂 ローカルモード');
+  }
+}
+
+async function bgSyncToServer(d) {
+  const res = await fetch('/api/entries', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(d),
+    signal:  AbortSignal.timeout(5000)
+  });
+  if (!res.ok) throw new Error(`Server ${res.status}`);
+  const timeStr = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
+  const el = document.getElementById('srvLastSync');
+  if (el) el.textContent = timeStr;
+}
+
+async function migrateToServer() {
+  const d = load();
+  try {
+    await bgSyncToServer(d);
+    showToast('サーバーへのデータ移行が完了しました', 'success');
+    document.getElementById('srvMigrateSection')?.classList.add('hidden');
+  } catch(e) {
+    showToast('移行失敗: ' + e.message, 'error');
+  }
+}
+
+function setSyncChip(cls, text) {
+  const el = document.getElementById('syncChip');
+  if (!el) return;
+  el.textContent  = text;
+  el.className    = 'sync-chip visible ' + (cls === 'visible' ? '' : cls);
+}
+
+function updateServerStatusUI() {
+  const statusEl = document.getElementById('srvStatus');
+  const modeEl   = document.getElementById('srvMode');
+  const urlSec   = document.getElementById('srvUrlSection');
+  const offSec   = document.getElementById('srvOfflineSection');
+
+  if (!statusEl) return;
+
+  if (_serverOnline && _serverInfo) {
+    statusEl.className   = 'val ok';
+    statusEl.textContent = '接続済み ✓';
+    if (modeEl) { modeEl.className = 'val ok'; modeEl.textContent = 'サーバーモード（自動同期）'; }
+    urlSec?.classList.remove('hidden');
+    offSec?.classList.add('hidden');
+    const httpsPort = _serverInfo.httpsPort || 3443;
+    const netUrl = `https://${_serverInfo.ip}:${httpsPort}`;
+    const netEl  = document.getElementById('srvNetUrl');
+    if (netEl) netEl.textContent = netUrl;
+  } else {
+    statusEl.className   = 'val ng';
+    statusEl.textContent = 'オフライン';
+    if (modeEl) { modeEl.className = 'val warn'; modeEl.textContent = 'ローカルモード'; }
+    urlSec?.classList.add('hidden');
+    offSec?.classList.remove('hidden');
+    const isRemote = location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
+    const localMsg  = document.getElementById('srvOfflineLocal');
+    const remoteMsg = document.getElementById('srvOfflineRemote');
+    if (localMsg)  localMsg.style.display  = isRemote ? 'none'  : '';
+    if (remoteMsg) remoteMsg.style.display = isRemote ? ''      : 'none';
+  }
+}
+
+function copyServerUrl() {
+  if (!_serverInfo) return;
+  const httpsPort = _serverInfo.httpsPort || 3443;
+  const url = `https://${_serverInfo.ip}:${httpsPort}`;
+  navigator.clipboard.writeText(url).then(() => showToast('URLをコピーしました', 'success'));
+}
+
+function copyLocalUrl() {
+  if (!_serverInfo) return;
+  const url = `http://localhost:${_serverInfo.port}`;
+  navigator.clipboard.writeText(url).then(() => showToast('ローカルURLをコピーしました', 'success'));
+}
+
+// ══════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════
+function switchTab(tab) {
+  ['input','output','history','settings'].forEach(t => {
+    document.getElementById(`view-${t}`).classList.add('hidden');
+    document.getElementById(`tab-${t}`).classList.remove('active');
+  });
+  document.getElementById(`view-${tab}`).classList.remove('hidden');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  if (tab === 'input')    renderInput();
+  if (tab === 'output')   renderOutput();
+  if (tab === 'history')  renderHistory();
+  if (tab === 'settings') renderSettings();
+}
+
+// ══════════════════════════════════════════
+// ADD LEARNING
+// ══════════════════════════════════════════
+function addLearning() {
+  const title = document.getElementById('iTitle').value.trim();
+  if (!title) {
+    const el = document.getElementById('iTitle');
+    el.style.borderColor = 'var(--danger)';
+    setTimeout(() => { el.style.borderColor = ''; }, 1500);
+    return;
+  }
+  const d = load();
+  if (pendingCount(d) >= BLOCK_AT) { switchTab('output'); return; }
+
+  d.items.unshift({
+    id:      Date.now().toString(),
+    created: new Date().toISOString(),
+    title,
+    notes:   document.getElementById('iNotes').value.trim(),
+    cat:     document.getElementById('iCat').value,
+    outputs: {},
+    status:  'pending'
+  });
+  save(d);
+  document.getElementById('iTitle').value = '';
+  document.getElementById('iNotes').value = '';
+  document.getElementById('iTitle').focus();
+  updateGlobal(); renderInput();
+}
+
+// ══════════════════════════════════════════
+// RENDER INPUT TAB
+// ══════════════════════════════════════════
+function renderInput() {
+  const d  = load();
+  const pc = pendingCount(d);
+
+  const banner = document.getElementById('blockerBanner');
+  const form   = document.getElementById('inputForm');
+  if (pc >= BLOCK_AT) {
+    banner.classList.remove('hidden');
+    document.getElementById('blockerCount').textContent = pc;
+    form.style.opacity = '.3'; form.style.pointerEvents = 'none';
+  } else {
+    banner.classList.add('hidden');
+    form.style.opacity = '1'; form.style.pointerEvents = '';
+  }
+
+  const today      = new Date().toDateString();
+  const todayItems = d.items.filter(x => new Date(x.created).toDateString() === today);
+  const el         = document.getElementById('todayList');
+
+  if (!todayItems.length) {
+    el.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">📝</div>
+        <div class="bold">今日のインプットを追加しましょう</div>
+        <div class="text-sm text-muted mt8">記録 → 強制アウトプット → 定着</div>
+      </div>`;
+    return;
+  }
+
+  const sLabels = { pending:'待機中', in_progress:'進行中', done:'完了' };
+  const sClass  = { pending:'warn',   in_progress:'',        done:'success' };
+
+  el.innerHTML = `
+    <div class="sh">今日のインプット <span class="tag">${todayItems.length}件</span></div>
+    ${todayItems.map(item => `
+      <div class="card" style="padding:16px">
+        <div class="flex fc jb g12">
+          <div class="flex fc g8">
+            <span>${CAT_ICON[item.cat]||'📚'}</span>
+            <div>
+              <div class="li-title">${h(item.title)}</div>
+              <div class="li-meta">${fmtTime(item.created)}</div>
+            </div>
+          </div>
+          <div class="flex fc g8">
+            <span class="tag ${sClass[item.status]}">${sLabels[item.status]}</span>
+            ${item.status !== 'done' ? `<button class="btn btn-primary btn-sm" onclick="goToOutput('${item.id}')">アウトプット →</button>` : ''}
+          </div>
+        </div>
+        <div class="progress-bar" style="margin-top:10px">
+          <div class="progress-fill" style="width:${(doneTaskCount(item)/TASKS.length)*100}%"></div>
+        </div>
+        <div class="text-sm text-muted mt8">${doneTaskCount(item)}/${TASKS.length} タスク完了</div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function doneTaskCount(item) { return TASKS.filter(t => item.outputs[t.key]).length; }
+function goToOutput(id) {
+  switchTab('output');
+  setTimeout(() => {
+    document.getElementById(`oc-${id}`)?.scrollIntoView({ behavior:'smooth', block:'start' });
+  }, 80);
+}
+
+// ══════════════════════════════════════════
+// TIMERS
+// ══════════════════════════════════════════
+const timers = {};
+
+function startTimer(itemId, taskKey, secs) {
+  const key = `${itemId}__${taskKey}`;
+  if (timers[key]) return;
+  let rem = secs;
+  updateTimerEl(itemId, taskKey, rem);
+  timers[key] = setInterval(() => {
+    rem--;
+    updateTimerEl(itemId, taskKey, rem);
+    if (rem <= 0) { clearInterval(timers[key]); delete timers[key]; }
+  }, 1000);
+}
+
+function updateTimerEl(itemId, taskKey, rem) {
+  const el = document.getElementById(`tmr-${itemId}-${taskKey}`);
+  if (!el) { stopTimer(itemId, taskKey); return; }
+  if (rem <= 0) { el.className = 'timer done'; el.textContent = '⏰ 時間切れ'; return; }
+  const m = Math.floor(rem/60), s = rem%60;
+  el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  el.className   = 'timer' + (rem <= 30 ? ' urgent' : '');
+}
+
+function stopTimer(itemId, taskKey) {
+  const key = `${itemId}__${taskKey}`;
+  if (timers[key]) { clearInterval(timers[key]); delete timers[key]; }
+}
+
+function stopAllTimers() {
+  Object.keys(timers).forEach(k => { clearInterval(timers[k]); delete timers[k]; });
+}
+
+// ══════════════════════════════════════════
+// RENDER OUTPUT TAB
+// ══════════════════════════════════════════
+function renderOutput() {
+  stopAllTimers();
+  const d       = load();
+  const pending = d.items.filter(x => x.status !== 'done');
+  const el      = document.getElementById('outputContent');
+
+  if (!pending.length) {
+    el.innerHTML = `
+      <div class="celebration">
+        <div class="celebration-icon">🎉</div>
+        <div style="font-size:20px;font-weight:800;margin:12px 0">全タスク完了！</div>
+        <div class="text-muted">学んだ内容を4つの角度でアウトプットしました。</div>
+        <div class="mt16"><button class="btn btn-primary" onclick="switchTab('input')">新しいインプットを追加</button></div>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="sh">アウトプット待ち <span class="tag warn">${pending.length}件</span></div>
+    ${pending.map(item => renderItemCard(item)).join('')}
+  `;
+  pending.forEach(item => {
+    const idx = nextTaskIndex(item);
+    if (idx < TASKS.length) startTimer(item.id, TASKS[idx].key, TASKS[idx].timerSec);
+  });
+}
+
+function nextTaskIndex(item) {
+  for (let i = 0; i < TASKS.length; i++) {
+    if (!item.outputs[TASKS[i].key]) return i;
+  }
+  return TASKS.length;
+}
+
+function renderItemCard(item) {
+  const idx  = nextTaskIndex(item);
+  const pct  = (idx / TASKS.length) * 100;
+
+  let taskHtml = '';
+  if (idx >= TASKS.length) {
+    taskHtml = `<div class="alert alert-success mt16">✅ 全4タスク完了！素晴らしい。</div>`;
+  } else {
+    const task = TASKS[idx];
+    taskHtml = `
+      <div class="task-block" id="task-${item.id}-${task.key}">
+        <div class="task-header">
+          <div>
+            <div class="task-title">${task.title}</div>
+            <div class="task-step">${task.subtitle} · ステップ ${idx+1}/${TASKS.length}</div>
+          </div>
+          <div class="timer-wrap">
+            <div class="timer" id="tmr-${item.id}-${task.key}">${fmtTimer(task.timerSec)}</div>
+            <div class="timer-label">残り時間</div>
+          </div>
+        </div>
+        <div class="task-prompt">${task.prompt(h(item.title))}</div>
+        <textarea id="txt-${item.id}-${task.key}" placeholder="${task.ph}" rows="5"
+          oninput="onTextInput('${item.id}','${task.key}',${task.minChars})"></textarea>
+        <div class="flex jb fc mt8">
+          <div class="char-counter" id="cc-${item.id}-${task.key}">0 / ${task.minChars}文字 必要</div>
+          <button class="btn btn-primary btn-sm" id="sub-${item.id}-${task.key}"
+            onclick="submitTask('${item.id}','${task.key}',${task.minChars})" disabled>次へ →</button>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="card" id="oc-${item.id}">
+      <div class="flex fc jb g12">
+        <div class="flex fc g8">
+          <span>${CAT_ICON[item.cat]||'📚'}</span>
+          <div class="li-title">${h(item.title)}</div>
+        </div>
+        <span class="text-sm text-muted">${idx}/${TASKS.length}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      ${taskHtml}
+    </div>
+  `;
+}
+
+function onTextInput(itemId, taskKey, minChars) {
+  const txt = document.getElementById(`txt-${itemId}-${taskKey}`);
+  const cc  = document.getElementById(`cc-${itemId}-${taskKey}`);
+  const btn = document.getElementById(`sub-${itemId}-${taskKey}`);
+  if (!txt) return;
+  const len = txt.value.trim().length;
+  if (len >= minChars) {
+    cc.textContent = `${len} 文字 ✓`; cc.classList.add('met'); btn.disabled = false;
+  } else {
+    cc.textContent = `${len} / ${minChars}文字 (あと${minChars-len}文字)`; cc.classList.remove('met'); btn.disabled = true;
+  }
+}
+
+function submitTask(itemId, taskKey, minChars) {
+  const txt  = document.getElementById(`txt-${itemId}-${taskKey}`);
+  const text = txt ? txt.value.trim() : '';
+  if (text.length < minChars) return;
+  stopTimer(itemId, taskKey);
+  const d    = load();
+  const item = d.items.find(x => x.id === itemId);
+  if (!item) return;
+  item.outputs[taskKey] = { text, at: new Date().toISOString() };
+  item.status = TASKS.every(t => item.outputs[t.key]) ? 'done' : 'in_progress';
+  save(d);
+  updateGlobal(); renderOutput();
+}
+
+// ══════════════════════════════════════════
+// RENDER HISTORY TAB
+// ══════════════════════════════════════════
+function renderHistory() {
+  const d    = load();
+  const done = d.items.filter(x => x.status === 'done');
+  const el   = document.getElementById('historyContent');
+
+  const today     = new Date().toDateString();
+  const todayDone = done.filter(x => new Date(x.created).toDateString() === today).length;
+  const streak    = calcStreak(d.items);
+
+  const statsHtml = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-value">${done.length}</div><div class="stat-label">累計完了</div></div>
+      <div class="stat-card"><div class="stat-value">${todayDone}</div><div class="stat-label">今日完了</div></div>
+      <div class="stat-card"><div class="stat-value">${streak}🔥</div><div class="stat-label">連続日数</div></div>
+    </div>
+  `;
+
+  if (!done.length) {
+    el.innerHTML = statsHtml + `
+      <div class="empty">
+        <div class="empty-icon">📊</div>
+        <div class="bold">まだ記録がありません</div>
+        <div class="text-sm text-muted mt8">アウトプットを完了すると記録されます</div>
+      </div>`;
+    return;
+  }
+
+  const tLabels = { recall:'フリーリコール', summary:'3文要約', apply:'実用例', teach:'初心者説明' };
+  el.innerHTML = statsHtml + `
+    <div class="sh">完了済み <span class="tag success">${done.length}件</span></div>
+    ${done.map(item => `
+      <div class="card" style="margin-bottom:10px">
+        <div class="flex fc jb">
+          <div>
+            <div class="li-title">${h(item.title)}</div>
+            <div class="li-meta">${CAT_ICON[item.cat]||'📚'} ${fmtDate(item.created)}</div>
+          </div>
+          <span class="tag success">完了</span>
+        </div>
+        ${Object.entries(item.outputs).map(([k,v]) => `
+          <div class="history-output">
+            <div class="history-output-label">${tLabels[k]||k}</div>
+            <div>${h(v.text)}</div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('')}
+  `;
+}
+
+// ══════════════════════════════════════════
+// RENDER SETTINGS TAB
+// ══════════════════════════════════════════
+function renderSettings() {
+  updateServerStatusUI();
+  updateODStatusUI();
+  updateNotifUI();
+  const s = loadSettings();
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById(`notif${i}`);
+    if (el) el.value = s.notifTimes[i-1] || '';
+  }
+}
+
+// ══════════════════════════════════════════
+// INDEXEDDB (fileHandle persistence)
+// ══════════════════════════════════════════
+function openIDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(DB_STORE);
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+async function storeHandle(handle) {
+  const db = await openIDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).put(handle, 'onedrive');
+    tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+  });
+}
+
+async function getHandle() {
+  try {
+    const db = await openIDB();
+    return new Promise((res, rej) => {
+      const tx  = db.transaction(DB_STORE, 'readonly');
+      const req = tx.objectStore(DB_STORE).get('onedrive');
+      req.onsuccess = e => res(e.target.result || null);
+      req.onerror   = e => rej(e.target.error);
+    });
+  } catch { return null; }
+}
+
+async function removeHandle() {
+  const db = await openIDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).delete('onedrive');
+    tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+  });
+}
+
+// ══════════════════════════════════════════
+// ONEDRIVE SYNC
+// ══════════════════════════════════════════
+let _fileHandle = null;
+
+async function initOneDrive() {
+  if (!window.showSaveFilePicker) return;
+  const handle = await getHandle();
+  if (!handle) return;
+  try {
+    const perm = await handle.queryPermission({ mode:'readwrite' });
+    _fileHandle = handle;
+    setODStatus(perm === 'granted' ? 'ok' : 'warn',
+                perm === 'granted' ? '接続済み ✓' : '再接続が必要', handle.name);
+  } catch { await removeHandle(); }
+}
+
+async function connectOneDrive() {
+  if (!window.showSaveFilePicker) {
+    showToast('Chrome/Edgeをご利用ください', 'error'); return;
+  }
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: 'output-force-data.json',
+      types: [{ description:'JSON Data', accept:{ 'application/json':['.json'] } }]
+    });
+    _fileHandle = handle;
+    await storeHandle(handle);
+    await writeToHandle(handle, load());
+    setODStatus('ok', '接続済み ✓', handle.name);
+    showToast('☁️ OneDriveに接続しました', 'success');
+    renderSettings();
+  } catch(e) {
+    if (e.name !== 'AbortError') showToast('接続失敗: ' + e.message, 'error');
+  }
+}
+
+async function syncNow() {
+  if (!_fileHandle) return;
+  await writeToHandle(_fileHandle, load());
+  showToast('☁️ 同期しました', 'success');
+}
+
+async function loadFromOneDrive() {
+  if (!window.showOpenFilePicker) return;
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description:'JSON Data', accept:{ 'application/json':['.json'] } }]
+    });
+    const text = await (await handle.getFile()).text();
+    const data = JSON.parse(text);
+    if (!data.items) throw new Error('Invalid format');
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    updateGlobal(); renderInput();
+    showToast('☁️ クラウドから読み込みました', 'success');
+  } catch(e) {
+    if (e.name !== 'AbortError') showToast('読み込み失敗: ' + e.message, 'error');
+  }
+}
+
+async function disconnectOneDrive() {
+  if (!confirm('OneDrive同期を切断しますか？')) return;
+  _fileHandle = null;
+  await removeHandle();
+  setODStatus('ng', '未接続', '—');
+  showToast('OneDrive同期を切断しました');
+  renderSettings();
+}
+
+async function syncToOneDrive() {
+  if (!_fileHandle) return;
+  try {
+    const perm = await _fileHandle.requestPermission({ mode:'readwrite' });
+    if (perm !== 'granted') return;
+    await writeToHandle(_fileHandle, load());
+  } catch(e) { console.warn('OneDrive sync:', e); }
+}
+
+async function writeToHandle(handle, data) {
+  const perm = await handle.requestPermission({ mode:'readwrite' });
+  if (perm !== 'granted') throw new Error('Permission denied');
+  const writable = await handle.createWritable();
+  await writable.write(JSON.stringify(data, null, 2));
+  await writable.close();
+  const t = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
+  const el = document.getElementById('odLastSync');
+  if (el) el.textContent = t;
+}
+
+function setODStatus(cls, text, fileName) {
+  const s = document.getElementById('odStatus');
+  const f = document.getElementById('odFileName');
+  const b = document.getElementById('odSyncBtn');
+  const d = document.getElementById('odDisconnectBtn');
+  if (!s) return;
+  s.className = 'val ' + cls; s.textContent = text;
+  if (f) f.textContent = fileName || '—';
+  if (b) b.disabled = cls !== 'ok';
+  if (d) d.style.display = cls !== 'ng' ? 'block' : 'none';
+}
+
+function updateODStatusUI() {
+  if (!_fileHandle) setODStatus('ng', '未接続', '—');
+  if (!window.showSaveFilePicker) setODStatus('ng', 'ブラウザ非対応（Chrome/Edgeを使用）', '—');
+}
+
+// ══════════════════════════════════════════
+// NOTIFICATIONS
+// ══════════════════════════════════════════
+let _swReg = null;
+
+async function registerSW() {
+  if (!navigator.serviceWorker) return;
+  try {
+    _swReg = await navigator.serviceWorker.register('./sw.js');
+    // Wait for SW to become active (handles first install + updates)
+    if (!_swReg.active) {
+      await new Promise(resolve => {
+        const sw = _swReg.installing || _swReg.waiting;
+        if (!sw) { resolve(); return; }
+        sw.addEventListener('statechange', e => { if (e.target.state === 'activated') resolve(); });
+      });
+    }
+  } catch(e) { console.warn('SW registration failed:', e); }
+}
+
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"notifTimes":[],"lastNotified":{}}'); }
+  catch { return { notifTimes:[], lastNotified:{} }; }
+}
+function saveSettings(s) { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+
+function requestNotifPermission() {
+  if (!('Notification' in window)) { showToast('このブラウザは通知非対応', 'error'); return; }
+  Notification.requestPermission().then(p => {
+    if (p === 'granted') { showToast('🔔 通知が許可されました', 'success'); setupNotifWorker(); }
+    else showToast('通知が拒否されました。ブラウザ設定から許可してください', 'error');
+    updateNotifUI();
+  });
+}
+
+function saveNotifSettings() {
+  const times = [1,2,3].map(i => document.getElementById(`notif${i}`)?.value || '').filter(Boolean);
+  const s = loadSettings();
+  s.notifTimes = times; s.lastNotified = {};
+  saveSettings(s); setupNotifWorker();
+  showToast('🔔 保存: ' + (times.length ? times.join(', ') : '設定なし'), 'success');
+}
+
+function testNotification() {
+  if (Notification.permission !== 'granted') { showToast('先に通知を許可してください', 'error'); return; }
+  const sw = _swReg?.active || navigator.serviceWorker?.controller;
+  if (sw) {
+    sw.postMessage({ type:'TEST' });
+  } else {
+    new Notification('⚡ Output Force', { body:'テスト通知！正常に動作しています。', tag:'test' });
+  }
+  showToast('テスト通知を送信しました', 'info');
+}
+
+function setupNotifWorker() {
+  const s = loadSettings();
+  if (!s.notifTimes.length) return;
+  const sw = _swReg?.active || navigator.serviceWorker?.controller;
+  if (sw) sw.postMessage({ type:'SETUP', times: s.notifTimes });
+}
+
+// In-page fallback (every 30 s)
+setInterval(() => {
+  if (Notification.permission !== 'granted') return;
+  const s     = loadSettings();
+  if (!s.notifTimes.length) return;
+  const now   = new Date();
+  const hhmm  = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const today = now.toDateString();
+  let changed = false;
+  for (const time of s.notifTimes) {
+    const key = `${today}__${time}`;
+    if (hhmm === time && !s.lastNotified[key]) {
+      s.lastNotified[key] = true; changed = true;
+      const pc = pendingCount(load());
+      new Notification('⚡ Output Force', {
+        body: pc > 0 ? `${pc}件のアウトプットが待っています！` : '今日のインプットを記録しましょう',
+        tag: key
+      });
+    }
+  }
+  Object.keys(s.lastNotified).forEach(k => { if (!k.startsWith(today)) { delete s.lastNotified[k]; changed = true; } });
+  if (changed) saveSettings(s);
+}, 30000);
+
+function updateNotifUI() {
+  const status  = document.getElementById('notifPermStatus');
+  const permBtn = document.getElementById('notifPermBtn');
+  if (!status) return;
+  const perm  = ('Notification' in window) ? Notification.permission : 'unsupported';
+  const map   = { granted:['ok','許可済み ✓'], denied:['ng','拒否済み ✗'], default:['warn','未設定'], unsupported:['ng','非対応'] };
+  const [cls, label] = map[perm] || ['warn','不明'];
+  status.className = 'val ' + cls; status.textContent = label;
+  if (permBtn) permBtn.style.display = (perm === 'default') ? 'block' : 'none';
+  const deniedMsg = document.getElementById('notifDeniedMsg');
+  if (deniedMsg) deniedMsg.style.display = (perm === 'denied') ? 'block' : 'none';
+}
+
+// ══════════════════════════════════════════
+// DATA IMPORT / EXPORT
+// ══════════════════════════════════════════
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(load(), null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `output-force-${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+function importJSON(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.items) throw new Error('不正なフォーマット');
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      if (_serverOnline) bgSyncToServer(data).catch(() => {});
+      updateGlobal(); renderInput();
+      showToast('インポートしました', 'success');
+    } catch(err) { showToast('インポート失敗: ' + err.message, 'error'); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function clearAllData() {
+  if (!confirm('全データを消去しますか？')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  updateGlobal(); renderInput();
+  showToast('データを全消去しました');
+}
+
+// ══════════════════════════════════════════
+// GLOBAL UI
+// ══════════════════════════════════════════
+function updateGlobal() {
+  const d  = load();
+  const pc = pendingCount(d);
+  const badge = document.getElementById('debtBadge');
+  const dot   = document.getElementById('outputDot');
+  const icon  = document.getElementById('debtIcon');
+  const text  = document.getElementById('debtText');
+  text.textContent = `${pc}件 完了待ち`;
+  if (pc === 0) {
+    badge.classList.add('zero'); icon.textContent = '✓'; dot.classList.add('hidden');
+  } else {
+    badge.classList.remove('zero'); icon.textContent = '⚠'; dot.classList.remove('hidden');
+  }
+}
+
+// ══════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`; toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.transition = 'opacity .3s'; toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 350);
+  }, 3000);
+}
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function h(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+function pad(n) { return n.toString().padStart(2,'0'); }
+function fmtTime(iso) { return new Date(iso).toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' }); }
+function fmtDate(iso) { return new Date(iso).toLocaleDateString('ja-JP', { month:'long', day:'numeric' }); }
+function fmtTimer(s) { return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`; }
+
+function calcStreak(items) {
+  const dates = [...new Set(
+    items.filter(x => x.status==='done').map(x => new Date(x.created).toDateString())
+  )].map(s => new Date(s)).sort((a,b) => b-a);
+  if (!dates.length) return 0;
+  let streak = 0, check = new Date(); check.setHours(0,0,0,0);
+  for (const d of dates) {
+    const dt = new Date(d); dt.setHours(0,0,0,0);
+    if (Math.round((check-dt)/86400000) === streak) { streak++; check = new Date(dt); check.setDate(check.getDate()-1); }
+    else break;
+  }
+  return streak;
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+async function init() {
+  updateGlobal(); renderInput();
+  await Promise.all([ registerSW(), initOneDrive(), initServer() ]);
+  const s = loadSettings();
+  if (s.notifTimes.length && Notification.permission === 'granted') setupNotifWorker();
+}
+
+init();
+</script>
+</body>
+</html>
