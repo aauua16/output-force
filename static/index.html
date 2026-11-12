@@ -367,6 +367,21 @@ label {
       </div>
     </div>
 
+    <!-- Markdown folder -->
+    <div class="settings-section">
+      <div class="settings-section-title">📁 Obsidian フォルダに直接保存（サーバー不要）</div>
+      <div class="info-row"><span class="lbl">状態</span><span class="val ng" id="mdStatus">未接続</span></div>
+      <div class="info-row"><span class="lbl">フォルダ</span><span class="val" id="mdFolderName" style="font-size:12px">—</span></div>
+      <div class="info-row"><span class="lbl">最終同期</span><span class="val" id="mdLastSync">—</span></div>
+      <div class="flex g8 mt8 flex-wrap">
+        <button class="btn btn-primary" onclick="connectMdFolder()">フォルダを選択</button>
+        <button class="btn btn-danger btn-sm" id="mdDisconnectBtn" onclick="disconnectMdFolder()" style="display:none">切断</button>
+      </div>
+      <div class="alert alert-info" style="margin-top:14px;margin-bottom:0;font-size:12px">
+        💡 保存先のフォルダ（例: Vault 内の <code>06-アウトプット/wallfacer&amp;force</code>）を一度選ぶと、記録のたびに <code>日付_タイトル_ID.md</code> が自動で書き出されます。Chrome/Edgeが必要です。
+      </div>
+    </div>
+
     <!-- OneDrive -->
     <div class="settings-section">
       <div class="settings-section-title">☁️ OneDrive 同期</div>
@@ -515,6 +530,7 @@ function save(d) {
     });
   }
   if (_fileHandle) syncToOneDrive();
+  if (_dirHandle) syncToFolder(d);
 }
 
 function pendingCount(d) { return d.items.filter(x => x.status !== 'done').length; }
@@ -970,6 +986,7 @@ function renderHistory() {
 function renderSettings() {
   updateServerStatusUI();
   updateODStatusUI();
+  if (_dirHandle) setMdStatus('ok', '接続済み ✓', _dirHandle.name);
   updateNotifUI();
   const s = loadSettings();
   for (let i = 1; i <= 3; i++) {
@@ -990,32 +1007,32 @@ function openIDB() {
   });
 }
 
-async function storeHandle(handle) {
+async function storeHandle(handle, key = 'onedrive') {
   const db = await openIDB();
   return new Promise((res, rej) => {
     const tx = db.transaction(DB_STORE, 'readwrite');
-    tx.objectStore(DB_STORE).put(handle, 'onedrive');
+    tx.objectStore(DB_STORE).put(handle, key);
     tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
   });
 }
 
-async function getHandle() {
+async function getHandle(key = 'onedrive') {
   try {
     const db = await openIDB();
     return new Promise((res, rej) => {
       const tx  = db.transaction(DB_STORE, 'readonly');
-      const req = tx.objectStore(DB_STORE).get('onedrive');
+      const req = tx.objectStore(DB_STORE).get(key);
       req.onsuccess = e => res(e.target.result || null);
       req.onerror   = e => rej(e.target.error);
     });
   } catch { return null; }
 }
 
-async function removeHandle() {
+async function removeHandle(key = 'onedrive') {
   const db = await openIDB();
   return new Promise((res, rej) => {
     const tx = db.transaction(DB_STORE, 'readwrite');
-    tx.objectStore(DB_STORE).delete('onedrive');
+    tx.objectStore(DB_STORE).delete(key);
     tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
   });
 }
@@ -1107,6 +1124,146 @@ async function writeToHandle(handle, data) {
   const t = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
   const el = document.getElementById('odLastSync');
   if (el) el.textContent = t;
+}
+
+// ══════════════════════════════════════════
+// MARKDOWN FOLDER (Obsidian) — サーバー不要で .md を直接書き出す
+// ══════════════════════════════════════════
+let _dirHandle = null;
+const MD_TASKS  = { recall:'🧠 フリーリコール', summary:'📝 3文要約', apply:'🔧 実用例', teach:'🗣️ 初心者への説明' };
+const MD_CATS   = { tech:'💻 技術', biz:'💼 ビジネス', sci:'🔬 サイエンス', lang:'🌐 語学', other:'📚 その他' };
+const MD_STATUS = { pending:'⏳ 待機中', in_progress:'🔄 進行中', done:'✅ 完了' };
+
+function mdFileName(item) {
+  const safe = (item.title || '').replace(/[\\/:*?"<>|\r\n]/g, '').replace(/\s+/g, '-').slice(0, 40);
+  return `${(item.created || '').slice(0, 10)}_${safe}_${item.id}.md`;
+}
+
+function itemToMd(item) {
+  const cat = item.cat || 'other', status = item.status || 'pending', created = item.created || '';
+  let dtStr = created;
+  const dt = new Date(created);
+  if (!isNaN(dt)) {
+    const z = n => String(n).padStart(2, '0');
+    dtStr = `${dt.getFullYear()}年${dt.getMonth()+1}月${dt.getDate()}日 ${z(dt.getHours())}:${z(dt.getMinutes())}`;
+  }
+  const L = ['---', `id: "${item.id}"`, `title: ${JSON.stringify(item.title || '')}`, `category: "${cat}"`,
+    `status: "${status}"`, `created: "${created}"`, '---', '', `# ${item.title || ''}`, '',
+    `**カテゴリ:** ${MD_CATS[cat] || cat}  `, `**記録日時:** ${dtStr}  `,
+    `**ステータス:** ${MD_STATUS[status] || status}  `, ''];
+  if (item.notes) L.push('---', '', '## メモ', '', item.notes, '');
+  for (const k of ['recall', 'summary', 'apply', 'teach']) {
+    const out = (item.outputs || {})[k];
+    if (out && out.text) L.push('---', '', `## ${MD_TASKS[k]}`, '', out.text, '');
+  }
+  return L.join('\n').replace(/\s+$/, '') + '\n';
+}
+
+function mdToItem(content) {
+  content = content.replace(/\r\n/g, '\n');
+  const m = content.match(/^---\n([\s\S]*?)\n---\n/);
+  if (!m) return null;
+  const fm = {};
+  for (const line of m[1].split('\n')) {
+    const i = line.indexOf(': ');
+    if (i !== -1) fm[line.slice(0, i).trim()] = line.slice(i + 2).trim();
+  }
+  if (!fm.id) return null;
+  const unq = v => { try { return JSON.parse(v); } catch { return (v || '').replace(/^"|"$/g, ''); } };
+  const item = { id: unq(fm.id), title: unq(fm.title || '""'), cat: unq(fm.category || '"other"'),
+    status: unq(fm.status || '"pending"'), created: unq(fm.created || '""'), notes: '', outputs: {} };
+  const map = { 'フリーリコール':'recall', '3文要約':'summary', '実用例':'apply', '初心者への説明':'teach' };
+  for (const chunk of content.slice(m[0].length).split('\n---\n\n## ').slice(1)) {
+    const nl = chunk.indexOf('\n');
+    const heading = chunk.slice(0, nl).trim();
+    const text = chunk.slice(nl + 1).replace(/\n---\s*$/, '').trim();
+    if (heading === 'メモ') item.notes = text;
+    else for (const [label, key] of Object.entries(map))
+      if (heading.includes(label)) { item.outputs[key] = { text, at: item.created }; break; }
+  }
+  return item;
+}
+
+async function syncToFolder(d) {
+  if (!_dirHandle) return;
+  try {
+    const perm = await _dirHandle.requestPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') { setMdStatus('warn', '再接続が必要'); return; }
+    const existing = {};
+    for await (const [name] of _dirHandle.entries()) {
+      const mm = name.match(/_([^_]+)\.md$/);
+      if (mm) (existing[mm[1]] = existing[mm[1]] || []).push(name);
+    }
+    for (const item of d.items) {
+      const fname = mdFileName(item);
+      const fh = await _dirHandle.getFileHandle(fname, { create: true });
+      const w = await fh.createWritable();
+      await w.write(itemToMd(item));
+      await w.close();
+      for (const old of existing[item.id] || [])
+        if (old !== fname) await _dirHandle.removeEntry(old);   // タイトル変更時の旧ファイルのみ整理
+    }
+    setMdStatus('ok', '接続済み ✓');
+    const el = document.getElementById('mdLastSync');
+    if (el) el.textContent = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
+  } catch (e) { console.warn('MD sync:', e); setMdStatus('warn', '書き込み失敗'); }
+}
+
+async function importFromFolder() {
+  const found = [];
+  for await (const [name, h] of _dirHandle.entries()) {
+    if (h.kind !== 'file' || !name.endsWith('.md')) continue;
+    try { const it = mdToItem(await (await h.getFile()).text()); if (it) found.push(it); } catch {}
+  }
+  return found;
+}
+
+async function connectMdFolder() {
+  if (!window.showDirectoryPicker) { showToast('Chrome/Edgeをご利用ください', 'error'); return; }
+  try {
+    const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    _dirHandle = handle;
+    await storeHandle(handle, 'mddir');
+    // フォルダにある既存ノートを取り込み（同じIDはローカルを優先）、その後に書き出す
+    const d = load();
+    const have = new Set(d.items.map(x => x.id));
+    const imported = (await importFromFolder()).filter(x => !have.has(x.id));
+    if (imported.length) { d.items.push(...imported); localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+    await syncToFolder(d);
+    setMdStatus('ok', '接続済み ✓', handle.name);
+    updateGlobal(); renderInput(); renderSettings();
+    showToast(`📁 「${handle.name}」に接続しました（取り込み ${imported.length} 件）`, 'success');
+  } catch (e) {
+    if (e.name !== 'AbortError') showToast('接続失敗: ' + e.message, 'error');
+  }
+}
+
+async function disconnectMdFolder() {
+  if (!confirm('Markdownフォルダ連携を切断しますか？（フォルダ内のファイルは残ります）')) return;
+  _dirHandle = null;
+  await removeHandle('mddir');
+  setMdStatus('ng', '未接続', '—');
+  renderSettings();
+}
+
+async function initMdFolder() {
+  if (!window.showDirectoryPicker) return;
+  const handle = await getHandle('mddir');
+  if (!handle) return;
+  _dirHandle = handle;
+  try {
+    const perm = await handle.queryPermission({ mode: 'readwrite' });
+    setMdStatus(perm === 'granted' ? 'ok' : 'warn', perm === 'granted' ? '接続済み ✓' : '再接続が必要（保存時に許可）', handle.name);
+  } catch { _dirHandle = null; await removeHandle('mddir'); }
+}
+
+function setMdStatus(cls, text, name) {
+  const s = document.getElementById('mdStatus'), f = document.getElementById('mdFolderName');
+  const d = document.getElementById('mdDisconnectBtn');
+  if (!s) return;
+  s.className = 'val ' + cls; s.textContent = text;
+  if (f && name) f.textContent = name;
+  if (d) d.style.display = cls !== 'ng' ? 'block' : 'none';
 }
 
 function setODStatus(cls, text, fileName) {
@@ -1319,7 +1476,7 @@ function calcStreak(items) {
 // ══════════════════════════════════════════
 async function init() {
   updateGlobal(); renderInput();
-  await Promise.all([ registerSW(), initOneDrive(), initServer() ]);
+  await Promise.all([ registerSW(), initOneDrive(), initMdFolder(), initServer() ]);
   const s = loadSettings();
   if (s.notifTimes.length && Notification.permission === 'granted') setupNotifWorker();
 }

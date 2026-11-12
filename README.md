@@ -45,6 +45,10 @@ Windows なら [`scripts/start.bat`](scripts/start.bat) をダブルクリック
 - スマホ等: `https://<PCのIP>:3443`(初回は証明書の警告を許可)
   - 繋がらない場合は管理者権限で [`scripts/open-firewall.bat`](scripts/open-firewall.bat) を実行
 
+## 📂 サーバーなしで使う(HTMLを直接開く)
+
+`static/index.html` をダブルクリックで開き(Chrome / Edge)、**設定 → 📁 Obsidian フォルダに直接保存 → フォルダを選択**で保存先(例: Vault 内の `06-アウトプット/wallfacer&force`)を一度選ぶだけ。以降は記録のたびに `日付_タイトル_ID.md` が自動で書き出され、フォルダ内の既存ノートも取り込まれます。サーバー・Python は不要です(スマホ連携や通知を使う場合はサーバー版)。
+
 ## ⚙️ Configuration
 
 | 環境変数 | 既定値 | 説明 |
