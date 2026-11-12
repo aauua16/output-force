@@ -52,7 +52,7 @@ Windows なら [`scripts/start.bat`](scripts/start.bat) をダブルクリック
 | --- | --- | --- |
 | `OUTPUT_FORCE_DATA_DIR` | `./data` | Markdown ノートの保存先。Obsidian Vault 内のフォルダを指定すると便利 |
 
-Windows では `config.local.bat`(Git管理外)に `set OUTPUT_FORCE_DATA_DIR=...` と書けば `start.bat` が読み込みます。
+`.env.example` を `.env` にコピーして値を書くか、Windows なら `config.local.bat`(どちらもGit管理外)に `set OUTPUT_FORCE_DATA_DIR=...` と書けば読み込まれます。
 
 ## 🗂️ Project Structure
 

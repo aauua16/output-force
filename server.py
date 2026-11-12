@@ -19,6 +19,18 @@ HTTPS_PORT = 3443
 BASE_DIR = Path(__file__).parent
 STATIC_DIR = BASE_DIR / 'static'
 CERT_DIR = BASE_DIR / 'cert'
+def _load_dotenv(path: Path) -> None:
+    # 依存なしの簡易 .env 読み込み（既存の環境変数は上書きしない）
+    if not path.is_file():
+        return
+    for line in path.read_text(encoding='utf-8').splitlines():
+        line = line.strip()
+        if line and not line.startswith('#') and '=' in line:
+            k, v = line.split('=', 1)
+            os.environ.setdefault(k.strip(), v.strip().strip('"''))
+
+
+_load_dotenv(BASE_DIR / '.env')
 # ノートの保存先。Obsidian Vault 内のフォルダなどを環境変数で指定できる。
 DATA_DIR = Path(os.environ.get('OUTPUT_FORCE_DATA_DIR') or BASE_DIR / 'data').expanduser()
 
