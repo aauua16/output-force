@@ -27,7 +27,7 @@ def _load_dotenv(path: Path) -> None:
         line = line.strip()
         if line and not line.startswith('#') and '=' in line:
             k, v = line.split('=', 1)
-            os.environ.setdefault(k.strip(), v.strip().strip('"''))
+            os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 
 _load_dotenv(BASE_DIR / '.env')
