@@ -891,7 +891,24 @@ function submitTask(itemId, taskKey, minChars) {
   item.outputs[taskKey] = { text, at: new Date().toISOString() };
   item.status = TASKS.every(t => item.outputs[t.key]) ? 'done' : 'in_progress';
   save(d);
-  updateGlobal(); renderOutput();
+  updateGlobal();
+
+  const pending = d.items.filter(x => x.status !== 'done');
+  if (!pending.length) { renderOutput(); return; }
+
+  const cardEl = document.getElementById(`oc-${itemId}`);
+  if (cardEl) {
+    if (item.status === 'done') {
+      cardEl.remove();
+    } else {
+      cardEl.outerHTML = renderItemCard(item);
+      const newIdx = nextTaskIndex(item);
+      if (newIdx < TASKS.length) startTimer(item.id, TASKS[newIdx].key, TASKS[newIdx].timerSec);
+    }
+  }
+
+  const shEl = document.querySelector('#outputContent .sh');
+  if (shEl) shEl.innerHTML = `アウトプット待ち <span class="tag warn">${pending.length}件</span>`;
 }
 
 // ══════════════════════════════════════════

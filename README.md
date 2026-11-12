@@ -1,48 +1,75 @@
-# Output Force — アウトプット強制システム
+<div align="center">
 
-学習した内容を「フリーリコール」「3文要約」「実用例」「初心者への説明」の4タスクでアウトプットし、Obsidianに自動保存するローカルWebアプリ。
+# ⚡ Output Force
 
-## 機能
+**学んだら、書く。インプットで終わらせない「アウトプット強制」ツール。**
 
-- **4つのアウトプットタスク** — フリーリコール / 3文要約 / 実用例 / 初心者への説明
-- **カテゴリ管理** — 技術・ビジネス・サイエンス・語学・その他
-- **ステータス管理** — 待機中 / 進行中 / 完了
-- **Obsidian連携** — データをMarkdown形式でOneDriveに自動保存（Remotely Save対応）
-- **スマホ対応** — HTTPS + LAN経由で他デバイスからもアクセス可能
-- **PWA対応** — Service Workerによるオフライン対応
+[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.x-000000?logo=flask)](https://flask.palletsprojects.com/)
+[![PWA](https://img.shields.io/badge/PWA-ready-5A0FC8?logo=pwa&logoColor=white)](#)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-## セットアップ
+</div>
 
-### 必要環境
+学習した内容を **4つのタスク** でアウトプットし、**Obsidian 向けの Markdown** としてローカルに保存する、依存の少ないセルフホスト Web アプリです。
 
-- Node.js 18以上
+<!-- ここにスクリーンショットを追加: docs/screenshot.png -->
+<!-- <p align="center"><img src="docs/screenshot.png" width="720" alt="Output Force"></p> -->
 
-### インストール・起動
+## ✨ Features
+
+| タスク | 狙い |
+| --- | --- |
+| 🧠 フリーリコール | 見返さずに思い出せるだけ書き出す |
+| 📝 3文要約 | 本質だけを3文に圧縮する |
+| 🔧 実用例 | 実生活・仕事での使い方に落とす |
+| 🗣️ 初心者への説明 | 平易な言葉で説明して理解の穴を見つける |
+
+- 📂 カテゴリ(技術 / ビジネス / サイエンス / 語学 / その他)とステータス(待機中 / 進行中 / 完了)管理
+- 📝 frontmatter 付き Markdown で保存 — Obsidian の Vault にそのまま置ける
+- 📱 HTTPS(自己署名証明書を自動生成)で LAN 内のスマホからも利用可能
+- 🔔 PWA / Service Worker による通知
+
+## 🚀 Quick Start
 
 ```bash
 git clone https://github.com/aauua16/output-force.git
 cd output-force
-npm install
-npm start
+python -m venv .venv
+.venv/Scripts/pip install -r requirements.txt   # macOS/Linux: .venv/bin/pip
+.venv/Scripts/python server.py
 ```
 
-またはWindowsの場合、`アプリ起動.bat` をダブルクリック。
+Windows なら [`scripts/start.bat`](scripts/start.bat) をダブルクリックするだけ(初回は仮想環境も自動作成)。
 
-### アクセス
+- PC: <http://localhost:3000>
+- スマホ等: `https://<PCのIP>:3443`(初回は証明書の警告を許可)
+  - 繋がらない場合は管理者権限で [`scripts/open-firewall.bat`](scripts/open-firewall.bat) を実行
 
-- **このPC**: http://localhost:3000
-- **他のデバイス（スマホ等）**: https://＜PCのIPアドレス＞:3443（初回は「安全でない」警告を許可）
+## ⚙️ Configuration
 
-## データ保存先
+| 環境変数 | 既定値 | 説明 |
+| --- | --- | --- |
+| `OUTPUT_FORCE_DATA_DIR` | `./data` | Markdown ノートの保存先。Obsidian Vault 内のフォルダを指定すると便利 |
+
+Windows では `config.local.bat`(Git管理外)に `set OUTPUT_FORCE_DATA_DIR=...` と書けば `start.bat` が読み込みます。
+
+## 🗂️ Project Structure
 
 ```
-OneDrive/アプリ/remotely-save/wallfacer/
+output-force/
+├── server.py          # Flask サーバー(API + 静的配信 + HTTPS)
+├── static/            # フロントエンド(index.html, sw.js)
+├── scripts/           # Windows 用ランチャー
+├── requirements.txt
+└── LICENSE
 ```
 
-Obsidianの [Remotely Save](https://github.com/remotely-save/remotely-save) プラグインと組み合わせると、スマホとも同期可能です。
+## 🔐 Security notes
 
-## 注意
+- 静的配信は `static/` のみ。`cert/`(秘密鍵)や `data/`(個人ノート)は配信・コミットされません。
+- 認証はありません。**信頼できる LAN 内でのみ**利用してください。
 
-- `cert/`（SSL証明書）と `data/`（個人データ）はGitに含まれません
-- SSL証明書は初回起動時に自動生成されます
-- `node_modules/` は `npm install` で再生成してください
+## 📄 License
+
+[MIT](LICENSE)
