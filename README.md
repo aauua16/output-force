@@ -13,8 +13,7 @@
 
 学習した内容を **4つのタスク** でアウトプットし、**Obsidian 向けの Markdown** としてローカルに保存する、依存の少ないセルフホスト Web アプリです。
 
-<!-- ここにスクリーンショットを追加: docs/screenshot.png -->
-<!-- <p align="center"><img src="docs/screenshot.png" width="720" alt="Output Force"></p> -->
+<p align="center"><img src="docs/screenshot.png" width="640" alt="Output Force"></p>
 
 ## ✨ Features
 
