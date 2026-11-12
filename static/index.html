@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../assets/icon.png">
 <title>Output Force | アウトプット強制システム</title>
 <style>
 :root {
@@ -278,13 +279,7 @@ label {
       </div>
       <div class="form-group">
         <label>カテゴリ</label>
-        <select id="iCat">
-          <option value="tech">💻 技術</option>
-          <option value="biz">💼 ビジネス</option>
-          <option value="sci">🔬 サイエンス</option>
-          <option value="lang">🌐 語学</option>
-          <option value="other">📚 その他</option>
-        </select>
+        <select id="iCat"></select>
       </div>
       <div class="form-group">
         <label>メモ（任意）</label>
@@ -309,61 +304,16 @@ label {
   <div id="view-settings" class="hidden">
 
     <!-- Multi-device / Server -->
+    <!-- Categories -->
     <div class="settings-section">
-      <div class="settings-section-title">🖥️ マルチデバイス同期</div>
-
-      <div class="info-row">
-        <span class="lbl">状態</span>
-        <span class="val" id="srvStatus">確認中...</span>
+      <div class="settings-section-title">🏷️ カテゴリ（研究・関心領域に合わせて編集）</div>
+      <div id="catEditor"></div>
+      <div class="flex g8 mt8 flex-wrap">
+        <button class="btn btn-primary" onclick="addCat()">＋ カテゴリを追加</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetCats()">初期値に戻す</button>
       </div>
-      <div class="info-row" id="srvModeRow">
-        <span class="lbl">モード</span>
-        <span class="val warn" id="srvMode">ローカルのみ</span>
-      </div>
-
-      <div id="srvUrlSection" class="hidden">
-        <div class="divider"></div>
-        <div class="text-sm text-muted" style="margin-bottom:8px">他のデバイスはこのURLをブラウザで開いてください</div>
-        <div class="url-box" id="srvNetUrl">—</div>
-        <div class="flex g8 flex-wrap">
-          <button class="btn btn-primary" onclick="copyServerUrl()">URLをコピー (HTTPS)</button>
-          <button class="btn btn-ghost btn-sm" id="srvLocalBtn" onclick="copyLocalUrl()">ローカルURLをコピー</button>
-        </div>
-        <div class="alert alert-info" style="margin-top:10px;margin-bottom:0;font-size:12px">
-          🔒 他デバイスで初回アクセス時に「接続が安全でない」警告が出ます。<br>
-          <strong>「詳細設定」→「〜にアクセスする」</strong>をクリックして進んでください。<br>
-          通知許可にはHTTPS接続が必要なため、このURLをご利用ください。
-        </div>
-        <div class="divider"></div>
-        <div class="info-row">
-          <span class="lbl">データ保存先</span>
-          <span class="val" style="font-family:monospace;font-size:12px;color:var(--accent)">./data/*.md</span>
-        </div>
-        <div class="info-row">
-          <span class="lbl">最終同期</span>
-          <span class="val" id="srvLastSync">—</span>
-        </div>
-      </div>
-
-      <div id="srvOfflineSection">
-        <div id="srvOfflineLocal" class="alert alert-info" style="margin-top:12px;margin-bottom:0;font-size:12px">
-          💡 <strong>サーバーが起動していません。</strong><br>
-          <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px">アプリ起動.bat</code>
-          をダブルクリックしてください。<br>
-          Node.js が必要です: <strong>nodejs.org</strong>
-        </div>
-        <div id="srvOfflineRemote" class="alert alert-danger" style="margin-top:12px;margin-bottom:0;font-size:12px;display:none">
-          🖥️ <strong>ホストPC でサーバーが起動していません。</strong><br>
-          ホストPC（このアプリのデータがある PC）で
-          <strong>アプリ起動.bat</strong> を実行してから、このページを再読み込みしてください。
-        </div>
-      </div>
-
-      <div id="srvMigrateSection" class="hidden" style="margin-top:12px">
-        <button class="btn btn-ghost" onclick="migrateToServer()">
-          ローカルデータをサーバーに移行する
-        </button>
-        <span class="text-sm text-muted" style="margin-left:8px">（既存データをサーバーにアップロード）</span>
+      <div class="alert alert-info" style="margin-top:14px;margin-bottom:0;font-size:12px">
+        💡 名前を変えると、既存の記録のカテゴリも一緒に更新されます。アイコンは絵文字1文字がおすすめです。
       </div>
     </div>
 
@@ -379,76 +329,6 @@ label {
       </div>
       <div class="alert alert-info" style="margin-top:14px;margin-bottom:0;font-size:12px">
         💡 保存先のフォルダ（例: Vault 内の <code>06-アウトプット/wallfacer&amp;force</code>）を一度選ぶと、記録のたびに <code>日付_タイトル_ID.md</code> が自動で書き出されます。Chrome/Edgeが必要です。
-      </div>
-    </div>
-
-    <!-- OneDrive -->
-    <div class="settings-section">
-      <div class="settings-section-title">☁️ OneDrive 同期</div>
-      <div class="info-row">
-        <span class="lbl">状態</span>
-        <span class="val ng" id="odStatus">未接続</span>
-      </div>
-      <div class="info-row">
-        <span class="lbl">保存ファイル</span>
-        <span class="val" id="odFileName" style="font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span>
-      </div>
-      <div class="info-row">
-        <span class="lbl">最終同期</span>
-        <span class="val" id="odLastSync">—</span>
-      </div>
-      <div class="flex g8 mt8 flex-wrap">
-        <button class="btn btn-primary" onclick="connectOneDrive()">OneDriveに接続</button>
-        <button class="btn btn-ghost" onclick="syncNow()" id="odSyncBtn" disabled>今すぐ同期</button>
-        <button class="btn btn-ghost" onclick="loadFromOneDrive()" id="odLoadBtn">クラウドから読み込む</button>
-        <button class="btn btn-danger btn-sm" id="odDisconnectBtn" onclick="disconnectOneDrive()" style="display:none">切断</button>
-      </div>
-      <div class="alert alert-info" style="margin-top:14px;margin-bottom:0;font-size:12px">
-        💡 「接続」後、OneDriveフォルダ（例:
-        <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px">C:\Users\[名前]\OneDrive</code>）
-        に保存してください。変更のたびに自動同期されます。Chrome/Edgeが必要です。
-      </div>
-    </div>
-
-    <!-- Notifications -->
-    <div class="settings-section">
-      <div class="settings-section-title">🔔 通知設定</div>
-      <div class="info-row">
-        <span class="lbl">通知許可</span>
-        <span class="val" id="notifPermStatus">確認中...</span>
-      </div>
-      <div id="notifPermBtn" style="display:none;margin-bottom:12px">
-        <button class="btn btn-primary" onclick="requestNotifPermission()">通知を許可する</button>
-      </div>
-      <div id="notifDeniedMsg" style="display:none;margin-bottom:12px">
-        <div class="alert alert-danger" style="margin-bottom:8px">
-          🚫 通知が<strong>拒否済み</strong>です。ブラウザの設定から手動で許可してください。<br>
-          <span style="font-size:11px;opacity:.8">アドレスバー左の 🔒 アイコン → 通知 → 許可</span>
-        </div>
-      </div>
-      <div class="divider"></div>
-      <div class="sh" style="font-size:14px;margin-bottom:12px">通知時刻（最大3件）</div>
-      <div class="notif-time-row">
-        <label>時刻 1</label>
-        <input type="time" id="notif1">
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('notif1').value=''">✕</button>
-      </div>
-      <div class="notif-time-row">
-        <label>時刻 2</label>
-        <input type="time" id="notif2">
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('notif2').value=''">✕</button>
-      </div>
-      <div class="notif-time-row">
-        <label>時刻 3</label>
-        <input type="time" id="notif3">
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('notif3').value=''">✕</button>
-      </div>
-      <div class="flex jb fc mt16">
-        <button class="btn btn-ghost btn-sm" onclick="testNotification()">テスト通知</button>
-        <button class="btn btn-primary" onclick="saveNotifSettings()">保存する</button>
-      </div>
-      <div class="alert alert-info" style="margin-top:14px;margin-bottom:0;font-size:12px">
-        💡 通知はブラウザが開いている間のみ機能します。確実に受け取るにはタブをピン留めしてください。
       </div>
     </div>
 
@@ -476,12 +356,72 @@ label {
 // CONSTANTS
 // ══════════════════════════════════════════
 const STORAGE_KEY  = 'output_force_v2';
-const SETTINGS_KEY = 'output_force_settings';
+const CATS_KEY     = 'output_force_cats';
 const DB_NAME      = 'output_force_idb';
 const DB_STORE     = 'handles';
 const BLOCK_AT     = 3;
 
-const CAT_ICON = { tech:'💻', biz:'💼', sci:'🔬', lang:'🌐', other:'📚' };
+// ── カテゴリ（ユーザーが編集可能。識別子は表示名そのもの） ──
+const DEFAULT_CATS = [
+  { icon:'💻', label:'技術' }, { icon:'💼', label:'ビジネス' }, { icon:'🔬', label:'サイエンス' },
+  { icon:'🌐', label:'語学' }, { icon:'📚', label:'その他' },
+];
+const LEGACY_CATS = { tech:'技術', biz:'ビジネス', sci:'サイエンス', lang:'語学', other:'その他' };
+const catKey  = c => LEGACY_CATS[c] || c || 'その他';
+function getCats() {
+  try { const c = JSON.parse(localStorage.getItem(CATS_KEY)); if (Array.isArray(c) && c.length) return c; } catch {}
+  return DEFAULT_CATS.map(c => ({ ...c }));
+}
+function setCats(c) { localStorage.setItem(CATS_KEY, JSON.stringify(c)); }
+const catIcon = c => (getCats().find(x => x.label === catKey(c)) || {}).icon || '📚';
+const attr    = v => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
+function renderCatSelect() {
+  const sel = document.getElementById('iCat');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = getCats().map(c => `<option value="${attr(c.label)}">${h(c.icon)} ${h(c.label)}</option>`).join('');
+  if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
+function renderCatEditor() {
+  const el = document.getElementById('catEditor');
+  if (!el) return;
+  el.innerHTML = getCats().map((c, i) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <input value="${attr(c.icon)}" maxlength="4" style="width:56px;text-align:center" onchange="editCat(${i},'icon',this.value)">
+      <input value="${attr(c.label)}" maxlength="30" style="flex:1" onchange="editCat(${i},'label',this.value)">
+      <button class="btn btn-ghost btn-sm" onclick="delCat(${i})" title="削除">✕</button>
+    </div>`).join('');
+}
+function afterCatChange() { renderCatSelect(); renderCatEditor(); renderInput(); }
+function editCat(i, field, val) {
+  const cats = getCats(); val = val.trim();
+  if (!val) { afterCatChange(); return; }
+  if (field === 'label') {
+    if (cats.some((c, j) => j !== i && c.label === val)) { showToast('同じ名前のカテゴリがあります', 'error'); afterCatChange(); return; }
+    const old = cats[i].label;
+    const d = load(); let n = 0;
+    d.items.forEach(it => { if (catKey(it.cat) === old) { it.cat = val; n++; } });
+    cats[i].label = val; setCats(cats);
+    if (n) save(d);
+  } else { cats[i].icon = val; setCats(cats); }
+  afterCatChange();
+}
+function addCat() {
+  const cats = getCats(); let k = 1;
+  while (cats.some(c => c.label === `新しいカテゴリ${k}`)) k++;
+  cats.push({ icon: '📖', label: `新しいカテゴリ${k}` }); setCats(cats); afterCatChange();
+}
+function delCat(i) {
+  const cats = getCats();
+  if (cats.length <= 1) { showToast('最低1つのカテゴリが必要です', 'error'); return; }
+  if (!confirm(`「${cats[i].label}」を削除しますか？（既存の記録は残ります）`)) return;
+  cats.splice(i, 1); setCats(cats); afterCatChange();
+}
+function resetCats() {
+  if (!confirm('カテゴリを初期値に戻しますか？')) return;
+  localStorage.removeItem(CATS_KEY); afterCatChange();
+}
 
 const TASKS = [
   {
@@ -511,11 +451,8 @@ const TASKS = [
 ];
 
 // ══════════════════════════════════════════
-// DATA LAYER (localStorage + server sync)
+// DATA LAYER (localStorage + Markdown folder)
 // ══════════════════════════════════════════
-let _serverOnline = false;
-let _serverInfo   = null; // { ip, port }
-
 function load() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"items":[]}'); }
   catch { return { items: [] }; }
@@ -523,129 +460,18 @@ function load() {
 
 function save(d) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
-  if (_serverOnline) {
-    bgSyncToServer(d).catch(() => {
-      _serverOnline = false;
-      setSyncChip('local', 'ローカルモード');
-    });
-  }
-  if (_fileHandle) syncToOneDrive();
   if (_dirHandle) syncToFolder(d);
 }
 
 function pendingCount(d) { return d.items.filter(x => x.status !== 'done').length; }
 
-// ══════════════════════════════════════════
-// SERVER SYNC
-// ══════════════════════════════════════════
-async function initServer() {
-  try {
-    const res = await fetch('/api/info', { signal: AbortSignal.timeout(2000) });
-    if (!res.ok) throw new Error('no server');
-    _serverInfo = await res.json();
-    _serverOnline = true;
-
-    // Pull data from server (server is source of truth when online)
-    const dataRes = await fetch('/api/entries');
-    const { items: serverItems } = await dataRes.json();
-    const local = load();
-
-    if (serverItems.length > 0) {
-      // Use server data
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ items: serverItems }));
-    } else if (local.items.length > 0) {
-      // Upload local data to server
-      await bgSyncToServer(local);
-    }
-
-    setSyncChip('visible', '🖥️ サーバー同期中');
-    updateGlobal();
-    renderInput();
-
-    // Show migrate button if local has more data
-    const migBtn = document.getElementById('srvMigrateSection');
-    if (migBtn && local.items.length > serverItems.length) migBtn.classList.remove('hidden');
-
-  } catch {
-    _serverOnline = false;
-    setSyncChip('local', '📂 ローカルモード');
-  }
-}
-
-async function bgSyncToServer(d) {
-  const res = await fetch('/api/entries', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(d),
-    signal:  AbortSignal.timeout(5000)
-  });
-  if (!res.ok) throw new Error(`Server ${res.status}`);
-  const timeStr = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
-  const el = document.getElementById('srvLastSync');
-  if (el) el.textContent = timeStr;
-}
-
-async function migrateToServer() {
-  const d = load();
-  try {
-    await bgSyncToServer(d);
-    showToast('サーバーへのデータ移行が完了しました', 'success');
-    document.getElementById('srvMigrateSection')?.classList.add('hidden');
-  } catch(e) {
-    showToast('移行失敗: ' + e.message, 'error');
-  }
-}
-
 function setSyncChip(cls, text) {
   const el = document.getElementById('syncChip');
   if (!el) return;
-  el.textContent  = text;
-  el.className    = 'sync-chip visible ' + (cls === 'visible' ? '' : cls);
-}
-
-function updateServerStatusUI() {
-  const statusEl = document.getElementById('srvStatus');
-  const modeEl   = document.getElementById('srvMode');
-  const urlSec   = document.getElementById('srvUrlSection');
-  const offSec   = document.getElementById('srvOfflineSection');
-
-  if (!statusEl) return;
-
-  if (_serverOnline && _serverInfo) {
-    statusEl.className   = 'val ok';
-    statusEl.textContent = '接続済み ✓';
-    if (modeEl) { modeEl.className = 'val ok'; modeEl.textContent = 'サーバーモード（自動同期）'; }
-    urlSec?.classList.remove('hidden');
-    offSec?.classList.add('hidden');
-    const httpsPort = _serverInfo.httpsPort || 3443;
-    const netUrl = `https://${_serverInfo.ip}:${httpsPort}`;
-    const netEl  = document.getElementById('srvNetUrl');
-    if (netEl) netEl.textContent = netUrl;
-  } else {
-    statusEl.className   = 'val ng';
-    statusEl.textContent = 'オフライン';
-    if (modeEl) { modeEl.className = 'val warn'; modeEl.textContent = 'ローカルモード'; }
-    urlSec?.classList.add('hidden');
-    offSec?.classList.remove('hidden');
-    const isRemote = location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
-    const localMsg  = document.getElementById('srvOfflineLocal');
-    const remoteMsg = document.getElementById('srvOfflineRemote');
-    if (localMsg)  localMsg.style.display  = isRemote ? 'none'  : '';
-    if (remoteMsg) remoteMsg.style.display = isRemote ? ''      : 'none';
-  }
-}
-
-function copyServerUrl() {
-  if (!_serverInfo) return;
-  const httpsPort = _serverInfo.httpsPort || 3443;
-  const url = `https://${_serverInfo.ip}:${httpsPort}`;
-  navigator.clipboard.writeText(url).then(() => showToast('URLをコピーしました', 'success'));
-}
-
-function copyLocalUrl() {
-  if (!_serverInfo) return;
-  const url = `http://localhost:${_serverInfo.port}`;
-  navigator.clipboard.writeText(url).then(() => showToast('ローカルURLをコピーしました', 'success'));
+  el.textContent = text;
+  el.className   = 'sync-chip visible ' + cls;
+  el.onclick = () => switchTab('settings');
+  el.style.cursor = 'pointer';
 }
 
 // ══════════════════════════════════════════
@@ -735,7 +561,7 @@ function renderInput() {
       <div class="card" style="padding:16px">
         <div class="flex fc jb g12">
           <div class="flex fc g8">
-            <span>${CAT_ICON[item.cat]||'📚'}</span>
+            <span>${catIcon(item.cat)}</span>
             <div>
               <div class="li-title">${h(item.title)}</div>
               <div class="li-meta">${fmtTime(item.created)}</div>
@@ -872,7 +698,7 @@ function renderItemCard(item) {
     <div class="card" id="oc-${item.id}">
       <div class="flex fc jb g12">
         <div class="flex fc g8">
-          <span>${CAT_ICON[item.cat]||'📚'}</span>
+          <span>${catIcon(item.cat)}</span>
           <div class="li-title">${h(item.title)}</div>
         </div>
         <span class="text-sm text-muted">${idx}/${TASKS.length}</span>
@@ -965,7 +791,7 @@ function renderHistory() {
         <div class="flex fc jb">
           <div>
             <div class="li-title">${h(item.title)}</div>
-            <div class="li-meta">${CAT_ICON[item.cat]||'📚'} ${fmtDate(item.created)}</div>
+            <div class="li-meta">${catIcon(item.cat)} ${fmtDate(item.created)}</div>
           </div>
           <span class="tag success">完了</span>
         </div>
@@ -984,19 +810,12 @@ function renderHistory() {
 // RENDER SETTINGS TAB
 // ══════════════════════════════════════════
 function renderSettings() {
-  updateServerStatusUI();
-  updateODStatusUI();
+  renderCatEditor();
   if (_dirHandle) setMdStatus('ok', '接続済み ✓', _dirHandle.name);
-  updateNotifUI();
-  const s = loadSettings();
-  for (let i = 1; i <= 3; i++) {
-    const el = document.getElementById(`notif${i}`);
-    if (el) el.value = s.notifTimes[i-1] || '';
-  }
 }
 
 // ══════════════════════════════════════════
-// INDEXEDDB (fileHandle persistence)
+// INDEXEDDB (folder handle persistence)
 // ══════════════════════════════════════════
 function openIDB() {
   return new Promise((res, rej) => {
@@ -1007,7 +826,7 @@ function openIDB() {
   });
 }
 
-async function storeHandle(handle, key = 'onedrive') {
+async function storeHandle(handle, key = 'mddir') {
   const db = await openIDB();
   return new Promise((res, rej) => {
     const tx = db.transaction(DB_STORE, 'readwrite');
@@ -1016,7 +835,7 @@ async function storeHandle(handle, key = 'onedrive') {
   });
 }
 
-async function getHandle(key = 'onedrive') {
+async function getHandle(key = 'mddir') {
   try {
     const db = await openIDB();
     return new Promise((res, rej) => {
@@ -1028,7 +847,7 @@ async function getHandle(key = 'onedrive') {
   } catch { return null; }
 }
 
-async function removeHandle(key = 'onedrive') {
+async function removeHandle(key = 'mddir') {
   const db = await openIDB();
   return new Promise((res, rej) => {
     const tx = db.transaction(DB_STORE, 'readwrite');
@@ -1038,100 +857,10 @@ async function removeHandle(key = 'onedrive') {
 }
 
 // ══════════════════════════════════════════
-// ONEDRIVE SYNC
-// ══════════════════════════════════════════
-let _fileHandle = null;
-
-async function initOneDrive() {
-  if (!window.showSaveFilePicker) return;
-  const handle = await getHandle();
-  if (!handle) return;
-  try {
-    const perm = await handle.queryPermission({ mode:'readwrite' });
-    _fileHandle = handle;
-    setODStatus(perm === 'granted' ? 'ok' : 'warn',
-                perm === 'granted' ? '接続済み ✓' : '再接続が必要', handle.name);
-  } catch { await removeHandle(); }
-}
-
-async function connectOneDrive() {
-  if (!window.showSaveFilePicker) {
-    showToast('Chrome/Edgeをご利用ください', 'error'); return;
-  }
-  try {
-    const handle = await window.showSaveFilePicker({
-      suggestedName: 'output-force-data.json',
-      types: [{ description:'JSON Data', accept:{ 'application/json':['.json'] } }]
-    });
-    _fileHandle = handle;
-    await storeHandle(handle);
-    await writeToHandle(handle, load());
-    setODStatus('ok', '接続済み ✓', handle.name);
-    showToast('☁️ OneDriveに接続しました', 'success');
-    renderSettings();
-  } catch(e) {
-    if (e.name !== 'AbortError') showToast('接続失敗: ' + e.message, 'error');
-  }
-}
-
-async function syncNow() {
-  if (!_fileHandle) return;
-  await writeToHandle(_fileHandle, load());
-  showToast('☁️ 同期しました', 'success');
-}
-
-async function loadFromOneDrive() {
-  if (!window.showOpenFilePicker) return;
-  try {
-    const [handle] = await window.showOpenFilePicker({
-      types: [{ description:'JSON Data', accept:{ 'application/json':['.json'] } }]
-    });
-    const text = await (await handle.getFile()).text();
-    const data = JSON.parse(text);
-    if (!data.items) throw new Error('Invalid format');
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    updateGlobal(); renderInput();
-    showToast('☁️ クラウドから読み込みました', 'success');
-  } catch(e) {
-    if (e.name !== 'AbortError') showToast('読み込み失敗: ' + e.message, 'error');
-  }
-}
-
-async function disconnectOneDrive() {
-  if (!confirm('OneDrive同期を切断しますか？')) return;
-  _fileHandle = null;
-  await removeHandle();
-  setODStatus('ng', '未接続', '—');
-  showToast('OneDrive同期を切断しました');
-  renderSettings();
-}
-
-async function syncToOneDrive() {
-  if (!_fileHandle) return;
-  try {
-    const perm = await _fileHandle.requestPermission({ mode:'readwrite' });
-    if (perm !== 'granted') return;
-    await writeToHandle(_fileHandle, load());
-  } catch(e) { console.warn('OneDrive sync:', e); }
-}
-
-async function writeToHandle(handle, data) {
-  const perm = await handle.requestPermission({ mode:'readwrite' });
-  if (perm !== 'granted') throw new Error('Permission denied');
-  const writable = await handle.createWritable();
-  await writable.write(JSON.stringify(data, null, 2));
-  await writable.close();
-  const t = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
-  const el = document.getElementById('odLastSync');
-  if (el) el.textContent = t;
-}
-
-// ══════════════════════════════════════════
 // MARKDOWN FOLDER (Obsidian) — サーバー不要で .md を直接書き出す
 // ══════════════════════════════════════════
 let _dirHandle = null;
 const MD_TASKS  = { recall:'🧠 フリーリコール', summary:'📝 3文要約', apply:'🔧 実用例', teach:'🗣️ 初心者への説明' };
-const MD_CATS   = { tech:'💻 技術', biz:'💼 ビジネス', sci:'🔬 サイエンス', lang:'🌐 語学', other:'📚 その他' };
 const MD_STATUS = { pending:'⏳ 待機中', in_progress:'🔄 進行中', done:'✅ 完了' };
 
 function mdFileName(item) {
@@ -1140,7 +869,7 @@ function mdFileName(item) {
 }
 
 function itemToMd(item) {
-  const cat = item.cat || 'other', status = item.status || 'pending', created = item.created || '';
+  const cat = catKey(item.cat), status = item.status || 'pending', created = item.created || '';
   let dtStr = created;
   const dt = new Date(created);
   if (!isNaN(dt)) {
@@ -1149,7 +878,7 @@ function itemToMd(item) {
   }
   const L = ['---', `id: "${item.id}"`, `title: ${JSON.stringify(item.title || '')}`, `category: "${cat}"`,
     `status: "${status}"`, `created: "${created}"`, '---', '', `# ${item.title || ''}`, '',
-    `**カテゴリ:** ${MD_CATS[cat] || cat}  `, `**記録日時:** ${dtStr}  `,
+    `**カテゴリ:** ${catIcon(cat)} ${catKey(cat)}  `, `**記録日時:** ${dtStr}  `,
     `**ステータス:** ${MD_STATUS[status] || status}  `, ''];
   if (item.notes) L.push('---', '', '## メモ', '', item.notes, '');
   for (const k of ['recall', 'summary', 'apply', 'teach']) {
@@ -1170,7 +899,7 @@ function mdToItem(content) {
   }
   if (!fm.id) return null;
   const unq = v => { try { return JSON.parse(v); } catch { return (v || '').replace(/^"|"$/g, ''); } };
-  const item = { id: unq(fm.id), title: unq(fm.title || '""'), cat: unq(fm.category || '"other"'),
+  const item = { id: unq(fm.id), title: unq(fm.title || '""'), cat: catKey(unq(fm.category || '"その他"')),
     status: unq(fm.status || '"pending"'), created: unq(fm.created || '""'), notes: '', outputs: {} };
   const map = { 'フリーリコール':'recall', '3文要約':'summary', '実用例':'apply', '初心者への説明':'teach' };
   for (const chunk of content.slice(m[0].length).split('\n---\n\n## ').slice(1)) {
@@ -1264,121 +993,10 @@ function setMdStatus(cls, text, name) {
   s.className = 'val ' + cls; s.textContent = text;
   if (f && name) f.textContent = name;
   if (d) d.style.display = cls !== 'ng' ? 'block' : 'none';
-}
-
-function setODStatus(cls, text, fileName) {
-  const s = document.getElementById('odStatus');
-  const f = document.getElementById('odFileName');
-  const b = document.getElementById('odSyncBtn');
-  const d = document.getElementById('odDisconnectBtn');
-  if (!s) return;
-  s.className = 'val ' + cls; s.textContent = text;
-  if (f) f.textContent = fileName || '—';
-  if (b) b.disabled = cls !== 'ok';
-  if (d) d.style.display = cls !== 'ng' ? 'block' : 'none';
-}
-
-function updateODStatusUI() {
-  if (!_fileHandle) setODStatus('ng', '未接続', '—');
-  if (!window.showSaveFilePicker) setODStatus('ng', 'ブラウザ非対応（Chrome/Edgeを使用）', '—');
-}
-
-// ══════════════════════════════════════════
-// NOTIFICATIONS
-// ══════════════════════════════════════════
-let _swReg = null;
-
-async function registerSW() {
-  if (!navigator.serviceWorker) return;
-  try {
-    _swReg = await navigator.serviceWorker.register('./sw.js');
-    // Wait for SW to become active (handles first install + updates)
-    if (!_swReg.active) {
-      await new Promise(resolve => {
-        const sw = _swReg.installing || _swReg.waiting;
-        if (!sw) { resolve(); return; }
-        sw.addEventListener('statechange', e => { if (e.target.state === 'activated') resolve(); });
-      });
-    }
-  } catch(e) { console.warn('SW registration failed:', e); }
-}
-
-function loadSettings() {
-  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"notifTimes":[],"lastNotified":{}}'); }
-  catch { return { notifTimes:[], lastNotified:{} }; }
-}
-function saveSettings(s) { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
-
-function requestNotifPermission() {
-  if (!('Notification' in window)) { showToast('このブラウザは通知非対応', 'error'); return; }
-  Notification.requestPermission().then(p => {
-    if (p === 'granted') { showToast('🔔 通知が許可されました', 'success'); setupNotifWorker(); }
-    else showToast('通知が拒否されました。ブラウザ設定から許可してください', 'error');
-    updateNotifUI();
-  });
-}
-
-function saveNotifSettings() {
-  const times = [1,2,3].map(i => document.getElementById(`notif${i}`)?.value || '').filter(Boolean);
-  const s = loadSettings();
-  s.notifTimes = times; s.lastNotified = {};
-  saveSettings(s); setupNotifWorker();
-  showToast('🔔 保存: ' + (times.length ? times.join(', ') : '設定なし'), 'success');
-}
-
-function testNotification() {
-  if (Notification.permission !== 'granted') { showToast('先に通知を許可してください', 'error'); return; }
-  const sw = _swReg?.active || navigator.serviceWorker?.controller;
-  if (sw) {
-    sw.postMessage({ type:'TEST' });
-  } else {
-    new Notification('⚡ Output Force', { body:'テスト通知！正常に動作しています。', tag:'test' });
-  }
-  showToast('テスト通知を送信しました', 'info');
-}
-
-function setupNotifWorker() {
-  const s = loadSettings();
-  if (!s.notifTimes.length) return;
-  const sw = _swReg?.active || navigator.serviceWorker?.controller;
-  if (sw) sw.postMessage({ type:'SETUP', times: s.notifTimes });
-}
-
-// In-page fallback (every 30 s)
-setInterval(() => {
-  if (Notification.permission !== 'granted') return;
-  const s     = loadSettings();
-  if (!s.notifTimes.length) return;
-  const now   = new Date();
-  const hhmm  = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  const today = now.toDateString();
-  let changed = false;
-  for (const time of s.notifTimes) {
-    const key = `${today}__${time}`;
-    if (hhmm === time && !s.lastNotified[key]) {
-      s.lastNotified[key] = true; changed = true;
-      const pc = pendingCount(load());
-      new Notification('⚡ Output Force', {
-        body: pc > 0 ? `${pc}件のアウトプットが待っています！` : '今日のインプットを記録しましょう',
-        tag: key
-      });
-    }
-  }
-  Object.keys(s.lastNotified).forEach(k => { if (!k.startsWith(today)) { delete s.lastNotified[k]; changed = true; } });
-  if (changed) saveSettings(s);
-}, 30000);
-
-function updateNotifUI() {
-  const status  = document.getElementById('notifPermStatus');
-  const permBtn = document.getElementById('notifPermBtn');
-  if (!status) return;
-  const perm  = ('Notification' in window) ? Notification.permission : 'unsupported';
-  const map   = { granted:['ok','許可済み ✓'], denied:['ng','拒否済み ✗'], default:['warn','未設定'], unsupported:['ng','非対応'] };
-  const [cls, label] = map[perm] || ['warn','不明'];
-  status.className = 'val ' + cls; status.textContent = label;
-  if (permBtn) permBtn.style.display = (perm === 'default') ? 'block' : 'none';
-  const deniedMsg = document.getElementById('notifDeniedMsg');
-  if (deniedMsg) deniedMsg.style.display = (perm === 'denied') ? 'block' : 'none';
+  const nm = (f && f.textContent && f.textContent !== '—') ? f.textContent : (name || '');
+  if (cls === 'ok')        setSyncChip('', '📁 ' + nm);
+  else if (cls === 'warn') setSyncChip('local', '📁 ' + (nm || '保存先') + '（許可が必要）');
+  else                     setSyncChip('local', '📁 保存先未設定 — 設定から選択');
 }
 
 // ══════════════════════════════════════════
@@ -1400,7 +1018,6 @@ function importJSON(e) {
       const data = JSON.parse(ev.target.result);
       if (!data.items) throw new Error('不正なフォーマット');
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      if (_serverOnline) bgSyncToServer(data).catch(() => {});
       updateGlobal(); renderInput();
       showToast('インポートしました', 'success');
     } catch(err) { showToast('インポート失敗: ' + err.message, 'error'); }
@@ -1475,10 +1092,11 @@ function calcStreak(items) {
 // INIT
 // ══════════════════════════════════════════
 async function init() {
+  renderCatSelect();
+  setMdStatus('ng', '未接続');
   updateGlobal(); renderInput();
-  await Promise.all([ registerSW(), initOneDrive(), initMdFolder(), initServer() ]);
-  const s = loadSettings();
-  if (s.notifTimes.length && Notification.permission === 'granted') setupNotifWorker();
+  await initMdFolder();
+  updateGlobal(); renderInput();
 }
 
 init();

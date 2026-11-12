@@ -2,20 +2,16 @@
 
 # ⚡ Output Force
 
-**学んだら、書く。インプットで終わらせない「アウトプット強制」ツール。**
+**学んだら、書く。インプットで終わらせない「アウトプット強制」アプリ。**
 
-[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.x-000000?logo=flask)](https://flask.palletsprojects.com/)
-[![PWA](https://img.shields.io/badge/PWA-ready-5A0FC8?logo=pwa&logoColor=white)](#)
+[![HTML](https://img.shields.io/badge/HTML-single%20file-E34F26?logo=html5&logoColor=white)](static/index.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 </div>
 
-学習した内容を **4つのタスク** でアウトプットし、**Obsidian 向けの Markdown** としてローカルに保存する、依存の少ないセルフホスト Web アプリです。
-
 <p align="center"><img src="docs/screenshot.png" width="640" alt="Output Force"></p>
 
-## ✨ Features
+学習した内容を **4つのタスク** でアウトプットし、**Obsidian 向けの Markdown** として好きなフォルダに直接保存する、サーバー不要のローカルアプリです。
 
 | タスク | 狙い |
 | --- | --- |
@@ -24,54 +20,41 @@
 | 🔧 実用例 | 実生活・仕事での使い方に落とす |
 | 🗣️ 初心者への説明 | 平易な言葉で説明して理解の穴を見つける |
 
-- 📂 カテゴリ(技術 / ビジネス / サイエンス / 語学 / その他)とステータス(待機中 / 進行中 / 完了)管理
+## ✨ Features
+
+- 🏷️ **カテゴリを自由に編集** — 研究・関心領域に合わせて追加・改名・削除(設定 → カテゴリ)。改名すると既存の記録も更新
 - 📝 frontmatter 付き Markdown で保存 — Obsidian の Vault にそのまま置ける
-- 📱 HTTPS(自己署名証明書を自動生成)で LAN 内のスマホからも利用可能
-- 🔔 PWA / Service Worker による通知
+- 🔒 サーバー・アカウント不要。データはブラウザとあなたのフォルダだけに保存
+- ⏳ 未完了が3件たまると新規インプットをブロックする「強制」機構
 
-## 🚀 Quick Start
+## 🚀 使い方
 
-```bash
-git clone https://github.com/aauua16/output-force.git
-cd output-force
-python -m venv .venv
-.venv/Scripts/pip install -r requirements.txt   # macOS/Linux: .venv/bin/pip
-.venv/Scripts/python server.py
-```
+### A. アプリとして使う(Windows・おすすめ)
 
-Windows なら [`scripts/start.bat`](scripts/start.bat) をダブルクリックするだけ(初回は仮想環境も自動作成)。
+1. [`scripts/install-app.bat`](scripts/install-app.bat) をダブルクリック
+2. デスクトップとスタートメニューに **Output Force** ができます(アドレスバーのない専用ウィンドウで起動)
+3. 初回のみ **設定 → 📁 フォルダを選択** で保存先(例: Vault 内の `06-アウトプット/…`)を選ぶ
 
-- PC: <http://localhost:3000>
-- スマホ等: `https://<PCのIP>:3443`(初回は証明書の警告を許可)
-  - 繋がらない場合は管理者権限で [`scripts/open-firewall.bat`](scripts/open-firewall.bat) を実行
+Chrome または Edge が必要です。アプリ専用のプロファイルを使うので、普段のブラウザとデータは混ざりません。
 
-## 📂 サーバーなしで使う(HTMLを直接開く)
+### B. HTML を直接開く
 
-`static/index.html` をダブルクリックで開き(Chrome / Edge)、**設定 → 📁 Obsidian フォルダに直接保存 → フォルダを選択**で保存先(例: Vault 内の `06-アウトプット/wallfacer&force`)を一度選ぶだけ。以降は記録のたびに `日付_タイトル_ID.md` が自動で書き出され、フォルダ内の既存ノートも取り込まれます。サーバー・Python は不要です(スマホ連携や通知を使う場合はサーバー版)。
-
-## ⚙️ Configuration
-
-| 環境変数 | 既定値 | 説明 |
-| --- | --- | --- |
-| `OUTPUT_FORCE_DATA_DIR` | `./data` | Markdown ノートの保存先。Obsidian Vault 内のフォルダを指定すると便利 |
-
-`.env.example` を `.env` にコピーして値を書くか、Windows なら `config.local.bat`(どちらもGit管理外)に `set OUTPUT_FORCE_DATA_DIR=...` と書けば読み込まれます。
+[`static/index.html`](static/index.html) を Chrome / Edge で開くだけでも動きます。
 
 ## 🗂️ Project Structure
 
 ```
 output-force/
-├── server.py          # Flask サーバー(API + 静的配信 + HTTPS)
-├── static/            # フロントエンド(index.html, sw.js)
-├── scripts/           # Windows 用ランチャー
-├── requirements.txt
+├── static/index.html   # アプリ本体(単一ファイル)
+├── assets/             # アイコン
+├── scripts/            # アプリ化(ショートカット作成)
 └── LICENSE
 ```
 
-## 🔐 Security notes
+## 🔐 Notes
 
-- 静的配信は `static/` のみ。`cert/`(秘密鍵)や `data/`(個人ノート)は配信・コミットされません。
-- 認証はありません。**信頼できる LAN 内でのみ**利用してください。
+- 保存先フォルダへの書き込みは、ブラウザの File System Access API で、選んだフォルダに限って許可されます。
+- 既存ノートのうち、Output Force 形式(frontmatter に `id` がある)のものだけを取り込みます。他のファイルには触れません。
 
 ## 📄 License
 
