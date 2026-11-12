@@ -470,7 +470,7 @@ function setSyncChip(cls, text) {
   if (!el) return;
   el.textContent = text;
   el.className   = 'sync-chip visible ' + cls;
-  el.onclick = () => switchTab('settings');
+  el.onclick = () => (_dirHandle && el.classList.contains('local')) ? reconnectMdFolder() : switchTab('settings');
   el.style.cursor = 'pointer';
 }
 
@@ -982,8 +982,39 @@ async function initMdFolder() {
   _dirHandle = handle;
   try {
     const perm = await handle.queryPermission({ mode: 'readwrite' });
-    setMdStatus(perm === 'granted' ? 'ok' : 'warn', perm === 'granted' ? '接続済み ✓' : '再接続が必要（保存時に許可）', handle.name);
+    if (perm === 'granted') {
+      setMdStatus('ok', '接続済み ✓', handle.name);
+      await mergeFromFolder();           // フォルダ側にあるノートを取り込む
+    } else {
+      // ブラウザの仕様で、再起動後は書き込み許可をもう一度求められる。最初のクリックで再接続する。
+      setMdStatus('warn', '再接続が必要（クリックで許可）', handle.name);
+      document.addEventListener('click', () => {
+        const st = document.getElementById('mdStatus');
+        if (_dirHandle && st && st.classList.contains('warn')) reconnectMdFolder();
+      }, { once: true });
+    }
   } catch { _dirHandle = null; await removeHandle('mddir'); }
+}
+
+async function mergeFromFolder() {
+  const d = load();
+  const have = new Set(d.items.map(x => x.id));
+  const imported = (await importFromFolder()).filter(x => !have.has(x.id));
+  if (imported.length) { d.items.push(...imported); localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+  return imported.length;
+}
+
+async function reconnectMdFolder() {
+  if (!_dirHandle) return;
+  try {
+    const perm = await _dirHandle.requestPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') { setMdStatus('warn', '許可が必要（クリックで再試行）', _dirHandle.name); return; }
+    const n = await mergeFromFolder();
+    await syncToFolder(load());
+    setMdStatus('ok', '接続済み ✓', _dirHandle.name);
+    updateGlobal(); renderInput();
+    showToast(`📁 「${_dirHandle.name}」に再接続しました` + (n ? `（取り込み ${n} 件）` : ''), 'success');
+  } catch (e) { console.warn('reconnect:', e); }
 }
 
 function setMdStatus(cls, text, name) {
@@ -995,7 +1026,7 @@ function setMdStatus(cls, text, name) {
   if (d) d.style.display = cls !== 'ng' ? 'block' : 'none';
   const nm = (f && f.textContent && f.textContent !== '—') ? f.textContent : (name || '');
   if (cls === 'ok')        setSyncChip('', '📁 ' + nm);
-  else if (cls === 'warn') setSyncChip('local', '📁 ' + (nm || '保存先') + '（許可が必要）');
+  else if (cls === 'warn') setSyncChip('local', '📁 ' + (nm || '保存先') + '（クリックで再接続）');
   else                     setSyncChip('local', '📁 保存先未設定 — 設定から選択');
 }
 
@@ -1092,6 +1123,7 @@ function calcStreak(items) {
 // INIT
 // ══════════════════════════════════════════
 async function init() {
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}   // データの自動削除を防ぐ
   renderCatSelect();
   setMdStatus('ng', '未接続');
   updateGlobal(); renderInput();
