@@ -20,8 +20,8 @@ if not exist ".venv\Scripts\python.exe" (
 )
 
 rem 個人設定（保存先など）。Git管理外。例: set OUTPUT_FORCE_DATA_DIR=C:\Users\me\Vault\output-force
-if exist "config.local.bat" call "config.local.bat"
+if exist "%~dp0..\config.local.bat" call "%~dp0..\config.local.bat"
 
-start "" http://localhost:3000
+start "" cmd /c "timeout /t 2 /nobreak >nul & start http://localhost:3000"
 .venv\Scripts\python server.py
 pause
